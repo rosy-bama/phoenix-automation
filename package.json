@@ -1,0 +1,23 @@
+{
+  "name": "phoenix-automation",
+  "version": "0.1.0",
+  "description": "Playwright + TypeScript automation for the Ejara Phoenix admin panel. Fiat Wallet first, then Goal Savings, Savings Box, Bond Investment, User Management.",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:fiat": "playwright test tests/fiat-wallet",
+    "test:known-bugs": "playwright test --grep @known-bug",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "codegen": "playwright codegen --load-storage=.auth/state.json https://phoenix-testbox.ejaraapis.xyz"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^20.14.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.5.0"
+  }
+}
