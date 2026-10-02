@@ -12,6 +12,8 @@
     "test:known-bugs": "playwright test --grep @known-bug",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit",
+    "diagnose": "node scripts/diagnose.js",
+    "snapshot": "node scripts/snapshot.js",
     "codegen": "playwright codegen --load-storage=.auth/state.json https://phoenix-testbox.ejaraapis.xyz"
   },
   "devDependencies": {

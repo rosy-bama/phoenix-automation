@@ -6,6 +6,12 @@ import { FiatAccountDetailsPage } from '../pages/fiat/FiatAccountDetailsPage';
 import { FiatTransactionsPage } from '../pages/fiat/FiatTransactionsPage';
 import { SavingsAccountListPage } from '../pages/savings/SavingsAccountListPage';
 import { ManualOperationFlow } from '../pages/savings/ManualOperationFlow';
+import { restoreSessionStorage } from '../utils/session';
+
+type Options = {
+  /** Restore the saved sessionStorage. Login tests turn this off. */
+  restoreSession: boolean;
+};
 
 type Fixtures = {
   loginPage: LoginPage;
@@ -17,7 +23,12 @@ type Fixtures = {
   manualOps: ManualOperationFlow;
 };
 
-export const test = base.extend<Fixtures>({
+export const test = base.extend<Fixtures & Options>({
+  restoreSession: [true, { option: true }],
+  context: async ({ context, restoreSession, baseURL }, use) => {
+    if (restoreSession && baseURL) await restoreSessionStorage(context, new URL(baseURL).origin);
+    await use(context);
+  },
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
   shell: async ({ page }, use) => use(new AppShell(page)),
   fiatAccounts: async ({ page }, use) => use(new FiatAccountListPage(page)),

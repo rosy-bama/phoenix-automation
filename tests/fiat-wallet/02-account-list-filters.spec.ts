@@ -39,9 +39,7 @@ test.describe('Fiat Wallet - 2. Account list filters', () => {
     const f = fiatAccounts.filters;
     await f.choose('Status', 'Frozen');
     await f.apply();
-    for (const row of await fiatAccounts.table.rows.all()) {
-      await expect(row).toContainText(/frozen/i);
-    }
+    await expect(fiatAccounts.table.rows.filter({ hasNotText: /frozen/i })).toHaveCount(0);
   });
 
   test('FW-2.05 Status allows selecting several values', { tag: ['@known-bug'] }, async ({ fiatAccounts }) => {
@@ -79,7 +77,7 @@ test.describe('Fiat Wallet - 2. Account list filters', () => {
     await expect(f.heading).toBeHidden(); // panel closes on apply
     // INFERRED: balance shows in the row as "FCFA x,xxx"
     for (const row of await fiatAccounts.table.rows.all()) {
-      const m = ((await row.textContent()) ?? '').match(/FCFA\s*([\d,]+)/);
+      const m = ((await row.textContent()) ?? '').match(/([\d,]+(?:\.\d+)?)\s*XAF/);
       if (m) {
         const v = Number(m[1].replace(/,/g, ''));
         expect(v).toBeGreaterThanOrEqual(1000);

@@ -32,6 +32,8 @@ export class LoginPage extends BasePage {
 
   async goto() {
     await super.goto('/auth/login');
+    // Testbox is sometimes slow to render the form (AUTH-06, 2 Oct 2026).
+    await expect(this.usernameInput).toBeVisible({ timeout: 30_000 });
   }
 
   async submitCredentials(username: string, password: string) {
@@ -44,7 +46,9 @@ export class LoginPage extends BasePage {
   async login(username: string, password: string, otp: string) {
     await this.goto();
     await this.submitCredentials(username, password);
-    await fillOtp(this.page, otp);
+        await fillOtp(this.page, otp);
+    // Wait until we have actually left /auth/* - the nav alone isn't proof.
+    await expect(this.page).not.toHaveURL(/\/auth\//, { timeout: 20_000 });
     await expect(this.page.getByRole('navigation')).toBeVisible({ timeout: 20_000 });
   }
 }

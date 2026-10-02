@@ -31,9 +31,9 @@ test.describe('Fiat Wallet - 1. Account list', () => {
   test('FW-1.04 search by username returns the matching account', { tag: ['@smoke'] }, async ({ fiatAccounts }) => {
     await fiatAccounts.search(env.walletUsername);
     await expect(fiatAccounts.table.rowContaining(`@${env.walletUsername}`).first()).toBeVisible();
-    for (const row of await fiatAccounts.table.rows.all()) {
-      await expect(row).toContainText(env.walletUsername);
-    }
+    // Retries until the list has re-rendered with the search result -
+    // reading rows.all() straight away raced the search (2 Oct 2026).
+    await expect(fiatAccounts.table.rows.filter({ hasNotText: env.walletUsername })).toHaveCount(0);
   });
 
   test('FW-1.05 empty state - search with no match returns zero rows', async ({ fiatAccounts, page }) => {

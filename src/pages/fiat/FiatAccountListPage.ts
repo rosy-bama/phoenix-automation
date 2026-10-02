@@ -1,6 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from '../BasePage';
-import { AppShell } from '../AppShell';
+import { AppShell, APP_HOME, ROUTES } from '../AppShell';
 import { FilterPanel } from '../components/FilterPanel';
 import { DataTable } from '../components/DataTable';
 import { Pagination } from '../components/Pagination';
@@ -44,7 +44,7 @@ export class FiatAccountListPage extends BasePage {
   }
 
   async open() {
-    await this.goto('/');
+    await this.goto(ROUTES.fiatAccounts);
     await this.shell.open('Wallet', 'Account list');
     await expect(this.heading).toBeVisible();
     await expect(this.description).toBeVisible();

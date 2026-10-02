@@ -4,6 +4,7 @@ import { FilterPanel } from '../components/FilterPanel';
 import { DataTable } from '../components/DataTable';
 import { Pagination } from '../components/Pagination';
 import { TransactionDetailsPanel } from '../components/TransactionDetailsPanel';
+import { ROUTES } from '../AppShell';
 
 export type TxnTab = 'Deposits' | 'Withdrawals' | 'Sales' | 'Purchases';
 
@@ -40,12 +41,12 @@ export class FiatTransactionsPage extends BasePage {
 
     this.heading = page.getByRole('heading', { name: 'Transactions' });
     this.description = page.getByText(/^The transaction list covers/);
-    // INFERRED placeholder - confirm.
-    this.searchInput = page.getByRole('main').getByRole('textbox', { name: /search/i });
+    // CONFIRMED (snapshot): textbox "Search..."
+    this.searchInput = page.getByRole('main').getByRole('textbox', { name: 'Search...' });
   }
 
   async open() {
-    await this.goto('/fiat/transactions');
+    await this.goto(ROUTES.fiatTransactions);
     await expect(this.heading).toBeVisible();
   }
 

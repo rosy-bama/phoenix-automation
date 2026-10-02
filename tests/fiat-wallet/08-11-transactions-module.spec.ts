@@ -71,7 +71,7 @@ test.describe('Fiat Wallet - 9. Transactions filters', () => {
   test('FW-9.03 Status = Complete shows only Complete rows', async ({ fiatTransactions: t }) => {
     await t.filters.choose('Status', 'Complete');
     await t.filters.apply();
-    for (const row of await t.table.rows.all()) await expect(row).toContainText(/complete/i);
+    await expect(t.table.rows.filter({ hasNotText: /complete/i })).toHaveCount(0);
   });
 
   test('FW-9.04 empty state - impossible amount range returns zero rows', async ({ fiatTransactions: t }) => {

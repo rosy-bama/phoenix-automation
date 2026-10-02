@@ -35,9 +35,7 @@ test.describe('Fiat Wallet - 4. Account transaction filters', () => {
   test('FW-4.04 Status = Complete shows only Complete transactions', async ({ fiatAccountDetails: d }) => {
     await d.filters.choose('Status', 'Complete');
     await d.filters.apply();
-    for (const row of await d.table.rows.all()) {
-      await expect(row).toContainText(/complete/i);
-    }
+    await expect(d.table.rows.filter({ hasNotText: /complete/i })).toHaveCount(0);
   });
 
   test('FW-4.05 × closes the panel without applying', async ({ fiatAccountDetails: d }) => {

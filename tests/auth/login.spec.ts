@@ -1,17 +1,22 @@
 import { test, expect } from '../../src/fixtures/test-fixtures';
 import { knownBug } from '../../src/utils/known-bug';
 import { env } from '../../src/utils/env';
+import { fillOtp } from '../../src/utils/otp';
 
 // These tests start logged out - they must not reuse the saved session.
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({ storageState: { cookies: [], origins: [] }, restoreSession: false });
 
 test.describe('Authentication', () => {
   test('AUTH-01 valid credentials lead to the OTP step, then the app', { tag: ['@smoke'] }, async ({ loginPage, page }) => {
+    // One login only. The old version opened the OTP step, abandoned it and
+    // logged in a second time - two MFA challenges seconds apart, which left
+    // the run stuck on /auth/verify-mfa once (2 Oct 2026).
     await loginPage.goto();
     await loginPage.submitCredentials(env.username, env.password);
+    await expect(page).toHaveURL(/\/auth\/verify-mfa\//);
     await expect(loginPage.otpFirstBox).toBeVisible();
-    await loginPage.login(env.username, env.password, env.otp);
-    await expect(page).not.toHaveURL(/\/auth\/login/);
+    await fillOtp(page, env.otp);
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 });
   });
 
   test('AUTH-02 wrong password does not reach the OTP step', async ({ loginPage, page }) => {
@@ -50,8 +55,8 @@ test.describe('Authentication', () => {
   test('AUTH-06 Logout asks for confirmation; Cancel keeps the session', async ({ loginPage, shell, page }) => {
     await loginPage.login(env.username, env.password, env.otp);
     await shell.userMenuButton.click();
-    await page.getByRole('button', { name: 'Logout' }).click();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await shell.logoutMenuItem.click();
+    await shell.cancelLogoutButton.click();
     await expect(page).not.toHaveURL(/\/auth\/login/);
     await expect(shell.nav).toBeVisible();
   });

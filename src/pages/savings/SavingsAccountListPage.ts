@@ -1,6 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from '../BasePage';
-import { AppShell } from '../AppShell';
+import { AppShell, APP_HOME } from '../AppShell';
 import { DataTable } from '../components/DataTable';
 
 /** Savings box > Account list. CONFIRMED heading + "Locate the right account" description. */
@@ -19,7 +19,7 @@ export class SavingsAccountListPage extends BasePage {
   }
 
   async open() {
-    await this.goto('/');
+    await this.goto(APP_HOME);
     await this.shell.open('Savings box', 'Account list');
     await expect(this.heading).toBeVisible();
   }
