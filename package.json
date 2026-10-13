@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "diagnose": "node scripts/diagnose.js",
     "snapshot": "node scripts/snapshot.js",
-    "codegen": "playwright codegen --load-storage=.auth/state.json https://phoenix-testbox.ejaraapis.xyz"
+    "codegen": "playwright codegen --load-storage=.auth/state.json https://phoenix-testbox.ejaraapis.xyz",
+    "snapshot:fiat": "node scripts/snapshot-fiat.js",
+    "test:fiat:setup": "playwright test tests/fiat-wallet --grep-invert @known-bug"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
