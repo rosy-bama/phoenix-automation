@@ -33,8 +33,9 @@ export class FilterPanel {
     this.resetButton = this.root.getByRole('button', { name: 'Reset' });
     this.minAmount = this.root.getByRole('spinbutton', { name: /^(Min|Start amount)$/ });
     this.maxAmount = this.root.getByRole('spinbutton', { name: /^(Max|End amount)$/ });
-    this.startDate = this.root.getByRole('textbox', { name: 'Start date' });
-    this.endDate = this.root.getByRole('textbox', { name: 'End date' });
+    // Fiat Wallet date pickers are named "Start"/"End" (snapshot 13 Oct 2026).
+    this.startDate = this.root.getByRole('textbox', { name: /^Start( date)?$/ });
+    this.endDate = this.root.getByRole('textbox', { name: /^End( date)?$/ });
   }
 
   async open() {
@@ -51,7 +52,11 @@ export class FilterPanel {
     await this.applyButton.click();
   }
 
-  /** The Ant select that follows a field label, e.g. select('Status'). */
+  /**
+   * The Ant select that follows a field label. Fiat Wallet labels (snapshot
+   * 13 Oct 2026): 'Account status' (account list), 'Transaction status' and
+   * 'Payment method' (transaction lists).
+   */
   select(label: string) {
     return this.root
       .getByText(label, { exact: true })
@@ -61,9 +66,9 @@ export class FilterPanel {
 
   /** Visible options of the currently open Ant Design dropdown. */
   dropdownOptions() {
-    return this.page.locator(
-      '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option'
-    );
+    return this.page
+      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')
+      .filter({ visible: true });
   }
 
   async choose(label: string, option: string) {

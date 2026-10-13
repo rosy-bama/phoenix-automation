@@ -13,9 +13,9 @@ test.describe('Fiat Wallet - 2. Account list filters', () => {
     await fiatAccounts.filters.open();
   });
 
-  test('FW-2.01 filter panel shows Status, currency, balance range and date range', async ({ fiatAccounts }) => {
+  test('FW-2.01 filter panel shows Account status, balance range and date range', async ({ fiatAccounts }) => {
     const f = fiatAccounts.filters;
-    await expect(f.select('Status')).toBeVisible();
+    await expect(f.select('Account status')).toBeVisible();
     await expect(f.minAmount).toBeVisible();
     await expect(f.maxAmount).toBeVisible();
     await expect(f.startDate).toBeVisible();
@@ -30,14 +30,14 @@ test.describe('Fiat Wallet - 2. Account list filters', () => {
 
   test('FW-2.03 Status options include Frozen and Closed', async ({ fiatAccounts }) => {
     const f = fiatAccounts.filters;
-    await f.select('Status').click();
+    await f.select('Account status').click();
     await expect(f.dropdownOptions().filter({ hasText: /^Frozen$/ })).toBeVisible();
     await expect(f.dropdownOptions().filter({ hasText: /^Closed$/ })).toBeVisible();
   });
 
   test('FW-2.04 Status = Frozen shows only frozen accounts (or the empty state)', async ({ fiatAccounts }) => {
     const f = fiatAccounts.filters;
-    await f.choose('Status', 'Frozen');
+    await f.choose('Account status', 'Frozen');
     await f.apply();
     await expect(fiatAccounts.table.rows.filter({ hasNotText: /frozen/i })).toHaveCount(0);
   });
@@ -45,10 +45,10 @@ test.describe('Fiat Wallet - 2. Account list filters', () => {
   test('FW-2.05 Status allows selecting several values', { tag: ['@known-bug'] }, async ({ fiatAccounts }) => {
     knownBug('FW-2.05', 'Status filter is single-select; Figma expects multi-select (TSR 11 Aug 2026)');
     const f = fiatAccounts.filters;
-    await f.choose('Status', 'Frozen');
-    await f.choose('Status', 'Closed');
-    await expect(f.select('Status')).toContainText('Frozen');
-    await expect(f.select('Status')).toContainText('Closed');
+    await f.choose('Account status', 'Frozen');
+    await f.choose('Account status', 'Closed');
+    await expect(f.select('Account status')).toContainText('Frozen');
+    await expect(f.select('Account status')).toContainText('Closed');
   });
 
   test('FW-2.06 date range offers quick ranges', { tag: ['@known-bug'] }, async ({ fiatAccounts, page }) => {
@@ -61,12 +61,12 @@ test.describe('Fiat Wallet - 2. Account list filters', () => {
   test('FW-2.07 Reset clears every filter field', { tag: ['@known-bug'] }, async ({ fiatAccounts }) => {
     knownBug('FW-2.07', 'Reset does not clear all fields (TSR 11 Aug 2026)');
     const f = fiatAccounts.filters;
-    await f.choose('Status', 'Frozen');
+    await f.choose('Account status', 'Frozen');
     await f.setAmountRange(100, 5000);
     await f.resetButton.click();
     await expect(f.minAmount).toHaveValue('');
     await expect(f.maxAmount).toHaveValue('');
-    await expect(f.select('Status')).not.toContainText('Frozen');
+    await expect(f.select('Account status')).not.toContainText('Frozen');
   });
 
   test('FW-2.08 balance range keeps only accounts within the range', { tag: ['@known-bug'] }, async ({ fiatAccounts }) => {

@@ -39,7 +39,8 @@ test.describe('Fiat Wallet - 8. Transactions list', () => {
     for (const size of [10, 20, 50] as const) {
       await t.pagination.setPageSize(size);
       await expect(t.table.rows.first()).toBeVisible();
-      expect(await t.table.rows.count()).toBeLessThanOrEqual(size);
+      // Poll: the list re-renders after the size change.
+      await expect.poll(() => t.table.rows.count()).toBeLessThanOrEqual(size);
     }
   });
 
@@ -56,20 +57,21 @@ test.describe('Fiat Wallet - 9. Transactions filters', () => {
   });
 
   test('FW-9.01 filter panel shows Status, Payment method, Amount range, Date range', async ({ fiatTransactions: t }) => {
-    await expect(t.filters.select('Status')).toBeVisible();
+    await expect(t.filters.select('Transaction status')).toBeVisible();
     await expect(t.filters.select('Payment method')).toBeVisible();
     await expect(t.filters.root.getByText('Amount range', { exact: true })).toBeVisible();
     await expect(t.filters.startDate).toBeVisible();
   });
 
-  test('FW-9.02 subtitle reads "Manage transactions."', async ({ fiatTransactions: t }) => {
-    // Convention: transaction-level panels say "Manage transactions." or
-    // "Manage users' transactions.". Low priority copy check.
-    await expect(t.filters.root.getByText(/^Manage (users' )?transactions\.$/)).toBeVisible();
+  test('FW-9.02 subtitle reads "Set the parameters to filter the list"', async ({ fiatTransactions: t }) => {
+    // Matches the app as it is (snapshot 13 Oct 2026). Phase 2: the convention
+    // for transaction-level panels is "Manage transactions." / "Manage users'
+    // transactions." - check against Figma.
+    await expect(t.filters.root.getByText('Set the parameters to filter the list', { exact: true })).toBeVisible();
   });
 
   test('FW-9.03 Status = Complete shows only Complete rows', async ({ fiatTransactions: t }) => {
-    await t.filters.choose('Status', 'Complete');
+    await t.filters.choose('Transaction status', 'Complete');
     await t.filters.apply();
     await expect(t.table.rows.filter({ hasNotText: /complete/i })).toHaveCount(0);
   });

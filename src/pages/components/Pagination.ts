@@ -1,17 +1,19 @@
 import { Page, Locator } from '@playwright/test';
+import { escapeRegex } from '../../utils/text';
 
 /**
- * CONFIRMED from codegen: page buttons ("1"), and a custom page-size select
- * showing "10▼"/"20▼" with options 10 / 20 / 50.
+ * CONFIRMED from codegen: page buttons ("1"). Page size is an Ant select
+ * named "Per page" (an <input class="ant-select-input">, NOT a native
+ * <select> - snapshot 13 Oct 2026) with options 10 / 20 / 50.
  * INFERRED: result counter copy "Showing X to Y of Z results" (from test plan
  * known defect: stray comma "of, Z").
  */
 export class Pagination {
-  readonly pageSizeToggle: Locator;
+  readonly pageSizeSelect: Locator;
   readonly counter: Locator;
 
   constructor(private readonly page: Page) {
-    this.pageSizeToggle = page.getByRole('main').getByText(/^\d+\s*▼$/);
+    this.pageSizeSelect = page.getByRole('main').getByRole('combobox', { name: 'Per page' });
     this.counter = page.getByRole('main').getByText(/^Showing \d+/);
   }
 
@@ -20,12 +22,13 @@ export class Pagination {
   }
 
   async setPageSize(size: 10 | 20 | 50) {
-    await this.pageSizeToggle.click();
+    // force: Ant draws the selected value over the input.
+    await this.pageSizeSelect.click({ force: true });
     await this.page
-      .getByRole('main')
-      .getByText(String(size), { exact: true })
+      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')
       .filter({ visible: true })
-      .last()
+      .filter({ hasText: new RegExp(`^${escapeRegex(String(size))}$`) })
+      .first()
       .click();
   }
 }

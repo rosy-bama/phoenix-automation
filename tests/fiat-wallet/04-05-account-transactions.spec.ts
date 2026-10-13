@@ -14,7 +14,7 @@ test.describe('Fiat Wallet - 4. Account transaction filters', () => {
   });
 
   test('FW-4.01 Status options: Pending, Complete, Failed, Payout Failed, Rejected', async ({ fiatAccountDetails: d }) => {
-    await d.filters.select('Status').click();
+    await d.filters.select('Transaction status').click();
     for (const o of ['Pending', 'Complete', 'Failed', 'Payout Failed', 'Rejected']) {
       await expect(d.filters.dropdownOptions().filter({ hasText: new RegExp(`^${o}$`) })).toBeVisible();
     }
@@ -33,14 +33,14 @@ test.describe('Fiat Wallet - 4. Account transaction filters', () => {
   });
 
   test('FW-4.04 Status = Complete shows only Complete transactions', async ({ fiatAccountDetails: d }) => {
-    await d.filters.choose('Status', 'Complete');
+    await d.filters.choose('Transaction status', 'Complete');
     await d.filters.apply();
     await expect(d.table.rows.filter({ hasNotText: /complete/i })).toHaveCount(0);
   });
 
   test('FW-4.05 × closes the panel without applying', async ({ fiatAccountDetails: d }) => {
     const before = await d.table.rows.count();
-    await d.filters.choose('Status', 'Rejected');
+    await d.filters.choose('Transaction status', 'Rejected');
     await d.filters.close();
     expect(await d.table.rows.count()).toBe(before);
   });

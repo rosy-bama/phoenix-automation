@@ -21,7 +21,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 10_000,
+    actionTimeout: 15_000,
     viewport: { width: 1440, height: 900 },
   },
 

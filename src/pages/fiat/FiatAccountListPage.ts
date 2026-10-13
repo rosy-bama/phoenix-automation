@@ -57,6 +57,10 @@ export class FiatAccountListPage extends BasePage {
 
   async openAccount(username: string) {
     await this.search(username);
+    // Wait for the search to re-render the list: clicking "See details" while
+    // the unfiltered list was still showing did nothing (13 Oct 2026).
+    await expect(this.table.rows.filter({ hasNotText: username })).toHaveCount(0);
+    await expect(this.table.rowContaining(`@${username}`).first()).toBeVisible();
     await this.table.openRowDetails(`@${username}`);
   }
 }

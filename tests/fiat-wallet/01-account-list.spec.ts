@@ -36,11 +36,13 @@ test.describe('Fiat Wallet - 1. Account list', () => {
     await expect(fiatAccounts.table.rows.filter({ hasNotText: env.walletUsername })).toHaveCount(0);
   });
 
-  test('FW-1.05 empty state - search with no match returns zero rows', async ({ fiatAccounts, page }) => {
+  test('FW-1.05 empty state - search with no match returns zero rows', async ({ fiatAccounts }) => {
     await fiatAccounts.search('zz-no-such-account-000');
     await expect(fiatAccounts.table.rows).toHaveCount(0);
-    // INFERRED copy - confirm the exact empty-state text against Figma.
-    await expect(page.getByText(/no (data|results|accounts?)/i).first()).toBeVisible();
+    // App copy is Ant's default "No data" (snapshot 13 Oct 2026). Scoped to the
+    // table: the empty icon's hidden SVG <title> also says "No data".
+    // Phase 2: compare with the Figma empty state.
+    await expect(fiatAccounts.table.table.getByText('No data', { exact: true }).filter({ visible: true })).toBeVisible();
   });
 
   test('FW-1.06 reload keeps the list populated', async ({ fiatAccounts }) => {
@@ -71,7 +73,8 @@ test.describe('Fiat Wallet - 1. Account list', () => {
     for (const size of [10, 20, 50] as const) {
       await fiatAccounts.pagination.setPageSize(size);
       await expect(fiatAccounts.table.rows.first()).toBeVisible();
-      expect(await fiatAccounts.table.rows.count()).toBeLessThanOrEqual(size);
+      // Poll: the list re-renders after the size change.
+      await expect.poll(() => fiatAccounts.table.rows.count()).toBeLessThanOrEqual(size);
     }
   });
 
