@@ -2,7 +2,7 @@
   "note": "One entry per complete test session; written by plan-report.ts. Commit it so the defect trend is shared.",
   "sessions": [
     {
-      "session": "Test session - Fiat wallet - 13/10/2026",
+      "session": "Test session - Fiat wallet - 13/10/2026 20:20",
       "date": "2026-10-13T19:20:00.000Z",
       "passRate": "50.8%",
       "open": [
@@ -150,7 +150,8 @@
           "id": "FW-DEF-35",
           "severity": "Low"
         }
-      ]
+      ],
+      "time": "20:20"
     }
   ]
 }

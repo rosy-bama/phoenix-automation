@@ -60,4 +60,4 @@ new sub-page of ClickUp "Phoenix > Test sessions > Automatic" when `CLICKUP_API_
 - A defect is open while any of its cases is Failed or Blocked; design (Figma) defects stay open
   until removed from the register. Failed/Blocked cases not linked to a defect are listed.
 - Complete runs append to `src/test-plan/fiat-wallet.history.json`. **Commit it** after each session
-  so everyone's trend continues from the same history. Report name: `Test session - Fiat wallet - DD/MM/YYYY`.
+  so everyone's trend continues from the same history. A session is identified by date + start time: report `Test session - Fiat wallet - DD/MM/YYYY HH:mm`, local file `… - DD-MM-YYYY HHhMM.md`; several runs on the same day give separate trend rows. A `PHX_REPORT_BASE` re-run keeps the full run's session.

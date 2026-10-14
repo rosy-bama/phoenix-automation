@@ -50,7 +50,7 @@ const RANK: Record<Outcome, number> = { Failed: 4, Blocked: 3, Passed: 2, Skippe
 
 type Defect = { id: string; severity: string; owner: string; area: string; title: string; tcs: string[]; known?: string; design?: boolean; ticket?: string };
 
-type HistoryEntry = { session: string; date: string; passRate: string; open: { id: string; severity: string }[]; fixed?: number; new?: number };
+type HistoryEntry = { session: string; date: string; time?: string; passRate: string; open: { id: string; severity: string }[]; fixed?: number; new?: number };
 
 type Attempt = { outcome: Outcome; knownBug?: string; feedback: string; title: string };
 
@@ -65,6 +65,8 @@ export default class PlanReport implements Reporter {
   /** Last attempt of each test (retries overwrite earlier attempts). */
   private lastAttempt = new Map<string, { ids: string[]; attempt: Attempt }>();
   private started = new Date();
+  /** Session name of the full run a PHX_REPORT_BASE re-run is merged into. */
+  private baseSession?: string;
 
   constructor(options: { module?: string } = {}) {
     const module = options.module ?? 'fiat-wallet';
@@ -128,6 +130,27 @@ export default class PlanReport implements Reporter {
     if (!this.plan) return;
     const cases = allCases(this.plan);
     const results = new Map(cases.map((c) => [c.id, this.resultFor(c)]));
+    // PHX_REPORT_BASE=<full run .json>: a re-run of a few (inconclusive) cases is
+    // merged into that full run; cases not re-run keep their earlier result.
+    const baseFile = process.env.PHX_REPORT_BASE;
+    if (baseFile && this.lastAttempt.size) {
+      const prev = JSON.parse(fs.readFileSync(baseFile, 'utf-8')) as Record<string, CaseResult>;
+      let kept = 0;
+      for (const c of cases) {
+        if (this.attemptsFor(c.id).length || !prev[c.id]) continue;
+        results.set(c.id, prev[c.id]);
+        this.inRun.add(c.id);
+        kept++;
+      }
+      console.log(`Merged with ${baseFile}: ${kept} case(s) kept from the full run, ${cases.length - kept} from this run.`);
+      // Keep the full run's session (page name and history entry), even after midnight:
+      // "… - DD-MM-YYYY HHhMM.json" -> "… - DD/MM/YYYY HH:mm"; older date-only names stay date-only.
+      const m = path.basename(baseFile).match(/(\d{2})-(\d{2})-(\d{4})(?: (\d{2})h(\d{2}))?/);
+      if (m) {
+        this.started = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), m[4] ? Number(m[4]) : this.started.getHours(), m[5] ? Number(m[5]) : this.started.getMinutes());
+        this.baseSession = `Test session - ${this.opts.feature} - ${m[1]}/${m[2]}/${m[3]}${m[4] ? ` ${m[4]}:${m[5]}` : ''}`;
+      }
+    }
     const automatedIds = cases.filter((c) => c.automate).map((c) => c.id);
     const complete = automatedIds.every((id) => this.inRun.has(id));
     if (!automatedIds.some((id) => this.inRun.has(id))) return; // this module did not run
@@ -136,8 +159,8 @@ export default class PlanReport implements Reporter {
     const md = this.render(results, full, complete);
     const dir = path.join('reports', this.opts.module);
     fs.mkdirSync(dir, { recursive: true });
-    // "Test session - Fiat wallet - 13-10-2026", "(2)", "(3)"… for later runs the same day.
-    const base = this.pageName().replace(/\//g, '-');
+    // "Test session - Fiat wallet - 13-10-2026 20h20" ("(2)" if that exact name exists).
+    const base = this.pageName().replace(/\//g, '-').replace(/ (\d{2}):(\d{2})$/, ' $1h$2');
     let stamp = base;
     for (let n = 2; fs.existsSync(path.join(dir, `${stamp}.md`)); n++) stamp = `${base} (${n})`;
     const file = path.join(dir, `${stamp}.md`);
@@ -209,21 +232,25 @@ export default class PlanReport implements Reporter {
     const st = this.defectState(results);
     if (!st) return [];
     const count = (list: { severity: string }[], s: string) => list.filter((d) => d.severity === s).length;
-    const row = (h: HistoryEntry) =>
-      `| ${cell(h.session)} | ${h.passRate} | **${h.open.length}** | ${count(h.open, 'Critical')} | ${count(h.open, 'High')} | ${count(h.open, 'Medium')} | ${count(h.open, 'Low')} | ${h.fixed ?? '—'} | ${h.new ?? '—'} |`;
+    const dateOf = (h: HistoryEntry) => h.session.match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] ?? h.date.slice(0, 10);
+    const timeOf = (h: HistoryEntry) => h.time ?? h.session.match(/(\d{2}:\d{2})$/)?.[1] ?? '—';
+    const row = (h: HistoryEntry, current = false) => {
+      const b = (v: string) => (current ? `**${v}**` : v);
+      return `| ${b(dateOf(h))} | ${b(timeOf(h))}${current ? ' (this session)' : ''} | ${h.passRate} | **${h.open.length}** | ${count(h.open, 'Critical')} | ${count(h.open, 'High')} | ${count(h.open, 'Medium')} | ${count(h.open, 'Low')} | ${h.fixed ?? '—'} | ${h.new ?? '—'} |`;
+    };
     const current = this.historyEntry(results, passRate);
     const delta = st.previous ? current.open.length - st.previous.open.length : 0;
     return [
       '## Defect trend',
       '',
       st.previous
-        ? `Open defects: **${current.open.length}** (${delta <= 0 ? '' : '+'}${delta} vs ${cell(st.previous.session)}) — ${current.fixed} fixed, ${current.new} new or reopened since the previous session.`
+        ? `Open defects: **${current.open.length}** (${delta <= 0 ? '' : '+'}${delta} vs the ${cell(st.previous.session.replace(/^Test session - [^-]+ - /, ''))} session) — ${current.fixed} fixed, ${current.new} new or reopened since the previous session.`
         : `Open defects: **${current.open.length}** — first session with a defect register (baseline).`,
       '',
-      '| Session | Pass rate | Open defects | Critical | High | Medium | Low | Fixed since previous | New since previous |',
-      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-      ...st.history.map(row),
-      row(current).replace(/^\| ([^|]+) \|/, '| **$1 (this session)** |'),
+      '| Date | Time | Pass rate | Open defects | Critical | High | Medium | Low | Fixed since previous | New since previous |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      ...st.history.map((h) => row(h)),
+      row(current, true),
       '',
       ...(st.fixed.length ? [`**Fixed since the previous session:** ${st.fixed.map((d) => `${d.id} — ${cell(d.title)}`).join('; ')}`, ''] : []),
     ];
@@ -263,6 +290,7 @@ export default class PlanReport implements Reporter {
     return {
       session: this.pageName(),
       date: this.started.toISOString(),
+      time: this.sessionTime(),
       passRate,
       open: st.open.map((d) => ({ id: d.id, severity: d.severity })),
       fixed: st.previous ? st.fixed.length : undefined,
@@ -276,10 +304,18 @@ export default class PlanReport implements Reporter {
     fs.writeFileSync(this.historyFile(), JSON.stringify({ note: 'One entry per complete test session; written by plan-report.ts. Commit it so the defect trend is shared.', sessions }, null, 2) + '\n', 'utf-8');
   }
 
+  /** Session start time, HH:mm (local time of the machine that ran it). */
+  private sessionTime() {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${p(this.started.getHours())}:${p(this.started.getMinutes())}`;
+  }
+
+  /** "Test session - Fiat wallet - 13/10/2026 20:20": identifies the session (page, file, history). */
   private pageName() {
+    if (this.baseSession) return this.baseSession;
     const d = this.started;
     const p = (n: number) => String(n).padStart(2, '0');
-    return `Test session - ${this.opts.feature} - ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+    return `Test session - ${this.opts.feature} - ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${this.sessionTime()}`;
   }
 
   render(results: Map<string, CaseResult>, full: FullResult, complete: boolean): string {
