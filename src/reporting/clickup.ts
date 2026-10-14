@@ -3,8 +3,8 @@
  * Defaults point at Phoenix > Test sessions > Automatic
  * (https://app.clickup.com/20509715/v/dc/khx0k-185755/khx0k-269135).
  *
- * The report page keeps the summary; the plan-with-feedback goes into a child
- * page. Content is sent in chunks of at most ~25k characters (create, then
+ * The report page keeps the summary; "@@subpage <name>" sections (Defects,
+ * Test plan with feedback) become child pages. Content is sent in chunks of at most ~25k characters (create, then
  * append), each table chunk repeating its header row. Found while publishing
  * by hand (13 Oct 2026): ClickUp rejects ("Bad Request") table rows with fewer
  * cells than the header and raw "<tag>" text — plan-markdown.ts avoids both.
@@ -12,7 +12,6 @@
 
 const API = 'https://api.clickup.com/api/v3';
 const CHUNK = 25_000;
-const SPLIT_MARKER = '## Test plan with feedback';
 
 export const clickupTarget = {
   workspaceId: process.env.CLICKUP_WORKSPACE_ID ?? '20509715',
@@ -63,12 +62,18 @@ async function createChunked(token: string, name: string, markdown: string, pare
   return id;
 }
 
-/** Creates the report page and its "Test plan with feedback" child page. Returns the report URL. */
+/**
+ * Creates the report page and one child page per "@@subpage <name>" marker
+ * line in the markdown (the markers themselves are not sent), e.g. "Defects"
+ * and "Test plan with feedback". Returns the report URL.
+ */
 export async function publishPage(token: string, name: string, markdown: string): Promise<string> {
   const { workspaceId, docId, parentPageId } = clickupTarget;
-  const at = markdown.indexOf(SPLIT_MARKER);
-  const main = at < 0 ? markdown : markdown.slice(0, at) + `${SPLIT_MARKER}\n\nSee the sub-page "Test plan with feedback".`;
-  const id = await createChunked(token, name, main, parentPageId);
-  if (at >= 0) await createChunked(token, 'Test plan with feedback', markdown.slice(at), id);
+  const [main, ...subpages] = markdown.split(/^@@subpage /m);
+  const id = await createChunked(token, name, main.trimEnd(), parentPageId);
+  for (const sub of subpages) {
+    const newline = sub.indexOf('\n');
+    await createChunked(token, sub.slice(0, newline).trim(), sub.slice(newline + 1).trim(), id);
+  }
   return `https://app.clickup.com/${workspaceId}/v/dc/${docId}/${id}`;
 }

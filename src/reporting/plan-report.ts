@@ -229,7 +229,16 @@ export default class PlanReport implements Reporter {
     ];
   }
 
-  /** "## Defects" table. Goes on the report page and at the top of "Test plan with feedback". */
+  /** One line on the report page pointing to the Defects sub-page. */
+  private defectsSummary(results: Map<string, CaseResult>): string[] {
+    const st = this.defectState(results);
+    if (!st) return [];
+    const n = (s: string) => st.open.filter((d) => d.severity === s).length;
+    const delta = st.previous ? ` (${st.open.length - st.previous.open.length >= 0 ? '+' : ''}${st.open.length - st.previous.open.length} vs previous session)` : '';
+    return [`**Defects:** ${st.open.length} open${delta} — ${n('Critical')} Critical, ${n('High')} High, ${n('Medium')} Medium, ${n('Low')} Low. Details and the trend across sessions: sub-page **Defects**.`, ''];
+  }
+
+  /** "## Defects" table, on the Defects sub-page (after the trend). */
   private renderDefects(results: Map<string, CaseResult>): string[] {
     const st = this.defectState(results);
     if (!st) return [];
@@ -336,9 +345,9 @@ export default class PlanReport implements Reporter {
       `**Pass rate: ${pct(passed.length, attempted)}** = Passed / (Passed + Failed + Blocked) = ${passed.length} / ${attempted}`,
       `Pass rate over all automated cases (Skipped counted as not passed): ${pct(passed.length, cases.length - manual.length)}. Execution coverage: ${pct(attempted, cases.length)} of the plan.`,
       '',
+      ...this.defectsSummary(results),
       `**Release verdict:** ${verdict}`,
       '',
-      ...this.renderTrend(results, pct(passed.length, attempted)),
       '## Results by section',
       '',
       '| Section | Cases | Passed | Failed | Skipped | Blocked | Manual | Pass rate |',
@@ -362,12 +371,10 @@ export default class PlanReport implements Reporter {
       '',
       '**Test data needs** (to turn Skipped into executed): ' + ([...new Set(skipped.map((c) => results.get(c.id)!.feedback))].map((f) => `"${cell(f)}"`).join('; ') || 'none'),
       '',
-      ...this.renderDefects(results),
-      // ClickUp: everything from here is the "Test plan with feedback" sub-page.
+      // "@@subpage <name>" lines start a ClickUp sub-page of the report (clickup.ts).
+      ...(this.defectState(results) ? ['@@subpage Defects', ...this.renderTrend(results, pct(passed.length, attempted)), ...this.renderDefects(results)] : []),
+      '@@subpage Test plan with feedback',
       '## Test plan with feedback',
-      '',
-      ...this.renderDefects(results),
-      '## Test plan',
       '',
       renderPlanTable(this.plan, results),
     ].join('\n');

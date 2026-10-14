@@ -4,7 +4,7 @@
     {
       "session": "Test session - Fiat wallet - 13/10/2026",
       "date": "2026-10-13T19:20:00.000Z",
-      "passRate": "51.0%",
+      "passRate": "50.8%",
       "open": [
         {
           "id": "FW-DEF-01",
@@ -64,6 +64,10 @@
         },
         {
           "id": "FW-DEF-15",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-36",
           "severity": "High"
         },
         {

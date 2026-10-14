@@ -53,9 +53,10 @@ new sub-page of ClickUp "Phoenix > Test sessions > Automatic" when `CLICKUP_API_
 
 - `src/test-plan/fiat-wallet.defects.json` is the defect register: each defect lists the test cases
   that detect it. Add the ticket id (`"ticket": "PHX-123"`) once filed.
-- Each report shows **Defect trend** right after the summary (one row per session: open defects by
-  severity, fixed and new since the previous session) and the **Defects** table (also at the top of
-  the "Test plan with feedback" sub-page), with "Since last session": New / Still open / Reopened.
+- Each report page shows a one-line defects summary; the **Defects** sub-page (sibling of
+  "Test plan with feedback") holds the **Defect trend** (one row per session: open defects by
+  severity, fixed and new since the previous session) and the **Defects** table with
+  "Since last session": New / Still open / Reopened.
 - A defect is open while any of its cases is Failed or Blocked; design (Figma) defects stay open
   until removed from the register. Failed/Blocked cases not linked to a defect are listed.
 - Complete runs append to `src/test-plan/fiat-wallet.history.json`. **Commit it** after each session

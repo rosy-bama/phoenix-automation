@@ -86,11 +86,15 @@ test.describe('Fiat Wallet - 8. Transactions list', () => {
       await t.openTab(tab);
       // Wait for the counter to change from the previous tab's total.
       await expect.poll(async () => (await t.pagination.counts()).text).not.toBe(previous);
+      // The counter can update before the rows finish rendering (13 Oct: counter
+      // said 20 while 11 rows were still on screen): wait for them to agree.
+      await expect
+        .poll(async () => { const c = await t.pagination.counts(); return c.to - c.from + 1 - (await t.table.rows.count()); }, { message: `${tab}: rows match the counter` })
+        .toBe(0);
       const c = await t.pagination.counts();
       previous = c.text;
-      notes.push(`${tab}: "${c.text}"`);
+      notes.push(`${tab}: "${c.text}" (${await t.table.rows.count()} rows)`);
       await expect(t.pagination.counter).toHaveText(/^Showing \d+ to \d+ of [\d,]+ results$/);
-      expect(c.to - c.from + 1).toBe(await t.table.rows.count());
     }
     observe(notes.join(' | '));
   });
