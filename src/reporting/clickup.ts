@@ -19,15 +19,60 @@ export const clickupTarget = {
   parentPageId: process.env.CLICKUP_REPORTS_PAGE_ID ?? 'khx0k-269135',
 };
 
-async function call(token: string, method: 'POST' | 'PUT', path: string, body: object): Promise<{ id?: string }> {
+class ServerError extends Error {}
+
+async function call(token: string, method: 'GET' | 'POST' | 'PUT', path: string, body?: object): Promise<any> {
   const { workspaceId, docId } = clickupTarget;
-  const res = await fetch(`${API}/workspaces/${workspaceId}/docs/${docId}/pages${path}`, {
-    method,
-    headers: { Authorization: token, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`ClickUp ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  return (await res.json().catch(() => ({}))) as { id?: string };
+  let res: Response;
+  try {
+    res = await fetch(`${API}/workspaces/${workspaceId}/docs/${docId}${path}`, {
+      method,
+      headers: { Authorization: token, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    throw new ServerError(`network: ${(e as Error).message}`);
+  }
+  const text = await res.text();
+  if (res.status >= 500) throw new ServerError(`ClickUp ${res.status}: ${text.slice(0, 200)}`);
+  if (!res.ok) throw new Error(`ClickUp ${res.status}: ${text.slice(0, 300)}`);
+  return text ? JSON.parse(text) : {};
+}
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** Letters and digits only: compares content across ClickUp's markdown re-formatting. */
+const plain = (s: string) => s.replace(/[^\p{L}\p{N}]+/gu, '').toLowerCase();
+
+type Listed = { id: string; name: string; parent_page_id?: string; pages?: Listed[] };
+async function findChild(token: string, parentPageId: string, name: string): Promise<string | undefined> {
+  const walk = (list: Listed[]): Listed | undefined => {
+    for (const p of list) {
+      if (p.parent_page_id === parentPageId && p.name === name) return p;
+      const hit = walk(p.pages ?? []);
+      if (hit) return hit;
+    }
+  };
+  return walk((await call(token, 'GET', '/page_listing?max_page_depth=-1')) as Listed[])?.id;
+}
+
+/**
+ * ClickUp sometimes answers 5xx ("context deadline exceeded", 14 Oct 2026)
+ * after it has already done the work. So a retry first checks: for a create,
+ * is the page already there? For an append, does the page already end with
+ * this chunk? Only if not is the request sent again (up to 3 attempts).
+ */
+async function withRetry(what: string, attempt: () => Promise<string>, alreadyDone: () => Promise<string | undefined>) {
+  for (let n = 1; ; n++) {
+    try {
+      return await attempt();
+    } catch (e) {
+      if (!(e instanceof ServerError) || n >= 3) throw e;
+      console.log(`ClickUp: ${what} failed (${e.message}); checking before retry ${n}…`);
+      await wait(5_000 * n);
+      const done = await alreadyDone().catch(() => undefined);
+      if (done) return done;
+    }
+  }
 }
 
 /** Splits markdown into chunks, cutting only between lines and repeating the current table header. */
@@ -54,10 +99,25 @@ export function chunk(markdown: string, size = CHUNK): string[] {
 
 async function createChunked(token: string, name: string, markdown: string, parentPageId: string): Promise<string> {
   const [first, ...rest] = chunk(markdown);
-  const { id } = await call(token, 'POST', '', { parent_page_id: parentPageId, name, content: first, content_format: 'text/md' });
-  if (!id) throw new Error('ClickUp did not return a page id');
-  for (const part of rest) {
-    await call(token, 'PUT', `/${id}`, { content: '\n' + part, content_format: 'text/md', content_edit_mode: 'append' });
+  const id = await withRetry(
+    `create "${name}"`,
+    async () => {
+      const { id } = await call(token, 'POST', '/pages', { parent_page_id: parentPageId, name, content: first, content_format: 'text/md' });
+      if (!id) throw new Error('ClickUp did not return a page id');
+      return id as string;
+    },
+    () => findChild(token, parentPageId, name),
+  );
+  for (const [i, part] of rest.entries()) {
+    const lastLine = plain(part.trim().split('\n').pop() ?? '');
+    await withRetry(
+      `append part ${i + 2}/${rest.length + 1} of "${name}"`,
+      async () => (await call(token, 'PUT', `/pages/${id}`, { content: '\n' + part, content_format: 'text/md', content_edit_mode: 'append' }), id),
+      async () => {
+        const page = await call(token, 'GET', `/pages/${id}?content_format=text/md`);
+        return plain(page.content ?? '').endsWith(lastLine) ? id : undefined;
+      },
+    );
   }
   return id;
 }
