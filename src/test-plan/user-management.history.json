@@ -1,0 +1,101 @@
+{
+  "note": "One entry per complete test session; written by plan-report.ts. Commit it so the defect trend is shared.",
+  "sessions": [
+    {
+      "session": "Test session - User management - 14/10/2026",
+      "date": "2026-10-14T13:43:00.000Z",
+      "time": "14:43",
+      "passRate": "52.8%",
+      "open": [
+        {
+          "id": "UM-DEF-01",
+          "severity": "Critical"
+        },
+        {
+          "id": "UM-DEF-02",
+          "severity": "Critical"
+        },
+        {
+          "id": "UM-DEF-03",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-04",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-05",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-06",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-07",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-08",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-09",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-10",
+          "severity": "High"
+        },
+        {
+          "id": "UM-DEF-11",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-12",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-13",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-14",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-15",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-16",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-17",
+          "severity": "Medium"
+        },
+        {
+          "id": "UM-DEF-18",
+          "severity": "Low"
+        },
+        {
+          "id": "UM-DEF-19",
+          "severity": "Low"
+        },
+        {
+          "id": "UM-DEF-20",
+          "severity": "Low"
+        },
+        {
+          "id": "UM-DEF-21",
+          "severity": "Low"
+        },
+        {
+          "id": "UM-DEF-22",
+          "severity": "Low"
+        }
+      ]
+    }
+  ]
+}

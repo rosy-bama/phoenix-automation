@@ -67,8 +67,7 @@ export class UserFlowPage {
 
   /** Title + body of the info/warning box (parent of the level-3 heading). */
   async infoText() {
-    const box = this.infoTitle.first().locator('xpath=..');
-    return (await box.innerText({ timeout: 10_000 })).replace(/\s+/g, ' ').trim();
+    return boxText(this.infoTitle.first());
   }
 
   /** Main text lines (Review step label/value pairs come out as lines). */
@@ -95,4 +94,17 @@ export class UserFlowPage {
     await expect(this.page).toHaveURL(/\/verify|\/review/, { timeout: 30_000 });
     await expect(this.heading).toHaveText(/review/i);
   }
+}
+
+/**
+ * Text of the box around a heading: the closest ancestor whose text is longer
+ * than the heading itself (the body paragraph is not always a sibling).
+ */
+export async function boxText(heading: import('@playwright/test').Locator): Promise<string> {
+  const title = ((await heading.textContent({ timeout: 10_000 })) ?? '').trim();
+  for (let up = 1; up <= 4; up++) {
+    const text = (await heading.locator(`xpath=${Array(up).fill('..').join('/')}`).innerText()).replace(/\s+/g, ' ').trim();
+    if (text.length > title.length + 3) return text;
+  }
+  return title;
 }

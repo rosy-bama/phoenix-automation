@@ -3,6 +3,7 @@ import { env } from '../../src/utils/env';
 import { tc } from '../../src/test-plan/tags';
 import { observe, unmet, DESIGN } from '../../src/utils/tc';
 import { selectedIndex, readClipboard, crashed } from '../../src/utils/ui';
+import { boxText } from '../../src/pages/users/UserFlowPage';
 import type { UsersListPage } from '../../src/pages/users/UsersListPage';
 import type { UserDetailsPage } from '../../src/pages/users/UserDetailsPage';
 
@@ -218,8 +219,8 @@ test.describe('User management - 3. Account details', () => {
   test('USR-DET-025 KYC alert copy complete and spelled right', tc('USR-DET-025'), async ({ usersList: l, userDetails: d }) => {
     await openKyc(l, d, 'pending');
     const title = ((await d.kycAlertTitle.first().textContent()) ?? '').trim();
-    const box = (await d.kycAlertTitle.first().locator('xpath=..').innerText()).split('\n').map((x) => x.trim()).filter(Boolean);
-    const body = box.find((x) => x !== title && !/Go to KYC page/.test(x)) ?? '';
+    const box = await boxText(d.kycAlertTitle.first());
+    const body = box.replace(title, '').replace(/Go to KYC page/, '').trim();
     observe(`Alert body "${body}"`);
     expect(body).toMatch(/^You can reach/);
     expect(body).toMatch(/[.!]$/);
