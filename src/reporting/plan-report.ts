@@ -15,7 +15,7 @@ import { publishPage } from './clickup';
  *
  * One instance per module (playwright.config.ts: { module: 'fiat-wallet' }).
  * It stays silent when none of its plan's cases ran.
- * Always writes reports/<module>/<timestamp>.md. After a COMPLETE run
+ * Always writes reports/<module>/Test session - <Feature> - <DD-MM-YYYY>.md. After a COMPLETE run
  * (every automated plan case was part of the run) it also publishes it as a
  * sub-page of ClickUp "Test sessions > Automatic" when CLICKUP_API_TOKEN is
  * set. PHX_PUBLISH_REPORT=false turns publishing off.
@@ -47,6 +47,8 @@ const MODULES: Record<string, Omit<ModuleOptions, 'module'>> = {
   },
 };
 const RANK: Record<Outcome, number> = { Failed: 4, Blocked: 3, Passed: 2, Skipped: 1, 'Not executed': 0 };
+
+type Defect = { id: string; severity: string; owner: string; area: string; title: string; tcs: string[]; known?: string; design?: boolean; ticket?: string };
 
 type Attempt = { outcome: Outcome; knownBug?: string; feedback: string; title: string };
 
@@ -130,9 +132,12 @@ export default class PlanReport implements Reporter {
     if (!this.lastAttempt.size) return; // nothing executed (e.g. --list)
 
     const md = this.render(results, full, complete);
-    const stamp = this.started.toISOString().slice(0, 16).replace(/[:T]/g, '-');
     const dir = path.join('reports', this.opts.module);
     fs.mkdirSync(dir, { recursive: true });
+    // "Test session - Fiat wallet - 13-10-2026", "(2)", "(3)"… for later runs the same day.
+    const base = this.pageName().replace(/\//g, '-');
+    let stamp = base;
+    for (let n = 2; fs.existsSync(path.join(dir, `${stamp}.md`)); n++) stamp = `${base} (${n})`;
     const file = path.join(dir, `${stamp}.md`);
     fs.writeFileSync(file, md, 'utf-8');
     fs.writeFileSync(path.join(dir, `${stamp}.json`), JSON.stringify(Object.fromEntries(results), null, 2), 'utf-8');
@@ -151,10 +156,43 @@ export default class PlanReport implements Reporter {
     }
   }
 
+  /**
+   * "## Defects" from src/test-plan/<module>.defects.json (if present): a defect
+   * is listed when one of its cases is Failed or Blocked in this run; design
+   * defects (the Figma file itself) are always listed. Failed/Blocked cases
+   * that match no defect are listed so the register can be extended.
+   */
+  private renderDefects(results: Map<string, CaseResult>): string[] {
+    const file = path.join('src', 'test-plan', `${this.opts.module}.defects.json`);
+    if (!fs.existsSync(file)) return [];
+    const { defects } = JSON.parse(fs.readFileSync(file, 'utf-8')) as { defects: Defect[] };
+    const bad = (id: string) => ['Failed', 'Blocked'].includes(results.get(id)?.outcome ?? '');
+    const order = ['Critical', 'High', 'Medium', 'Low'];
+    const open = defects
+      .filter((d) => d.design || d.tcs.some(bad))
+      .sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
+    const fixed = defects.filter((d) => !d.design && !d.tcs.some(bad) && d.tcs.some((id) => results.get(id)?.outcome === 'Passed'));
+    const covered = new Set(defects.flatMap((d) => d.tcs));
+    const unmapped = [...results].filter(([id, r]) => ['Failed', 'Blocked'].includes(r.outcome) && !covered.has(id)).map(([id]) => id);
+    const icon = (id: string) => ({ Failed: '❌', Blocked: '⛔', Passed: '✅', Skipped: '⏭️' } as Record<string, string>)[results.get(id)?.outcome ?? ''] ?? '✋';
+    return [
+      '## Defects',
+      '',
+      `${open.length} open defect(s) behind the Failed and Blocked cases above, most severe first. Severity is the defect's impact on CS work (not the test-case priority).`,
+      '',
+      '| ID | Severity | Defect | Area | Owner | Test cases | Status |',
+      '| --- | --- | --- | --- | --- | --- | --- |',
+      ...open.map((d) => `| ${d.id} | ${d.severity} | ${cell(d.title)} | ${cell(d.area)} | ${d.owner} | ${d.tcs.map((id) => `${icon(id)} ${id}`).join('<br>')} | ${d.ticket ? cell(d.ticket) : d.known ? `Known bug (${cell(d.known)})` : d.design ? 'Design (Figma)' : 'New — ticket to file'} |`),
+      '',
+      ...(fixed.length ? [`**No longer reproduced:** ${fixed.map((d) => `${d.id} (${cell(d.title)})`).join('; ')}`, ''] : []),
+      ...(unmapped.length ? [`**Failed/Blocked cases not linked to a defect yet:** ${unmapped.join(', ')}`, ''] : []),
+    ];
+  }
+
   private pageName() {
     const d = this.started;
     const p = (n: number) => String(n).padStart(2, '0');
-    return `${this.opts.feature} — ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `Test session - ${this.opts.feature} - ${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
   }
 
   render(results: Map<string, CaseResult>, full: FullResult, complete: boolean): string {
@@ -245,6 +283,7 @@ export default class PlanReport implements Reporter {
       '',
       '**Test data needs** (to turn Skipped into executed): ' + ([...new Set(skipped.map((c) => results.get(c.id)!.feedback))].map((f) => `"${cell(f)}"`).join('; ') || 'none'),
       '',
+      ...this.renderDefects(results),
       '## Test plan with feedback',
       '',
       renderPlanTable(this.plan, results),
