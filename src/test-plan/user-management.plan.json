@@ -1,0 +1,3278 @@
+{
+ "title": "Ejara Admin Panel — User Management Module Test Plan (v2)",
+ "version": "2.0",
+ "date": "2026-10-13",
+ "module": "User Management",
+ "figmaFile": "https://www.figma.com/design/wupOXbtxsxrenOpL5AfM4u/Design?node-id=1148-90701",
+ "figmaLabel": "Figma — User Management",
+ "previousTotal": 190,
+ "command": "npm run test:users:report",
+ "scope": "Accounts list (status tabs, search, filters, pagination, export entry point), Account details (profile panel, actions menu, KYC and account-status states, Products overview, Payment methods, Security/MFA), and every manual operation designed in Figma: Add / Deactivate payment method, Deactivate one or all MFA methods, Update email, Update phone, Deactivate, Activate, Freeze and Delete account. Customer Service (CS) admin profile.",
+ "deferred": "Export file contents (no export screen), Unfreeze flow and payment-method reactivation (referenced but no frames), Change user type modal (disabled for CS), Accounts list filter panel (not designed; tested against product's confirmed fields), audit-log screens (none designed).",
+ "designNotes": [
+  "Values on Figma screens are representative only: tests check structure, labels, behaviour and consistency, not the sample names or amounts.",
+  "Figma now designs Freeze, Delete and the 2-step Activate flow, the \"...\" menu (Deactivate / Freeze / Delete) and 4 KYC states. v1 listed these as \"not designed\"; sections 14–16 and the new section 3 cases cover them.",
+  "MFA, payment-method and account-status flows are Details → Review details with no admin OTP step in Figma; v1 cases that assumed an OTP step are updated or set to manual.",
+  "Design defects to raise with design: TOTP copy on every Review callout; \"Reason for deactivation\" on the Activate flow; account-deactivation warning reused on payment-method deactivation; \"Add the agent username.\" under every Delete option; \"froozen\" / \"Froozen\" spellings; truncated KYC alert body; \"Update details\" breadcrumb on the Add payment method code step; list tab \"Active\" vs badge \"Confirmed\".",
+  "State-changing cases (Freeze, Delete, Deactivate/Activate, MFA, payment methods, email/phone) only run with PHX_ALLOW_ACCOUNT_OPS=true and a disposable test account per flow; otherwise they are reported as Skipped with the missing requirement."
+ ],
+ "sections": [
+  {
+   "id": "1",
+   "name": "Accounts List",
+   "figma": "1148:90703 (6. Account List)",
+   "pre": "Agent is logged into the Admin Panel with a Customer Service (CS) role; User management > Accounts list (/users) is open.",
+   "cases": [
+    {
+     "id": "USR-LST-001",
+     "title": "Accounts list page loads with correct heading and subtitle",
+     "steps": [
+      "Navigate to User management."
+     ],
+     "expected": "Heading \"Accounts\" and subtitle \"Let agents locate the right user quickly, with enough summary information to triage before opening the full account detail.\" are shown; breadcrumb shows the User management icon.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "Expected copy taken from Figma 1148:90703."
+    },
+    {
+     "id": "USR-LST-002",
+     "title": "Empty state when there are zero user accounts",
+     "steps": [
+      "Navigate to User management in an environment/dataset with no user accounts."
+     ],
+     "expected": "Table area shows a clear empty-state message/illustration instead of a blank table or an error.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin logged into the Ejara Admin Panel with valid support-agent credentials; User management > Accounts list page is open in a test environment/dataset with zero user accounts."
+    },
+    {
+     "id": "USR-LST-003",
+     "title": "Phase tabs Active, Frozen, Deactivated, Deleted are present and mutually exclusive",
+     "steps": [
+      "Observe the tab row above the accounts table."
+     ],
+     "expected": "Four status tabs are shown in this order: Active, Frozen, Deactivated, Deleted (Figma). Exactly one is selected and the first one is the default. Status naming: Figma uses \"Active\" for the list tab and \"Confirmed\" for the profile badge. Flag if the build uses a different label for the first tab.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "Assert the Figma label and report the live label. v1 note: Naming inconsistency confirmed in the design: this list tab reads \"Active\", while the account detail screen's status badge for the same state reads \"Confirmed\". Needs reconciling with design/product — this plan uses \"Active\" for the list tab and \"Confirmed\" for the detail-page badge throughout, matching each screen's actual literal text, until the two are unified."
+    },
+    {
+     "id": "USR-LST-004",
+     "title": "Table columns display in correct order",
+     "steps": [
+      "Observe the accounts table header on the Active tab."
+     ],
+     "expected": "Columns in order: select-all checkbox, Username, Full name, Email address, Phone number, Country, then a \"See details\" action column.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-LST-005",
+     "title": "Each row displays a \"See details\" link",
+     "steps": [
+      "Observe each row in the table."
+     ],
+     "expected": "Every row has a functional \"See details\" link at the far right.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LST-006",
+     "title": "Switching to the Frozen tab shows only frozen accounts",
+     "steps": [
+      "Click the \"Frozen\" tab."
+     ],
+     "expected": "Table refreshes to show only accounts whose status is Frozen; other tabs' accounts are not shown.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-LST-007",
+     "title": "Switching to the Deactivated and Deleted tabs filters accordingly",
+     "steps": [
+      "Click the \"Deactivated\" tab, then the \"Deleted\" tab."
+     ],
+     "expected": "\"Deactivated\" shows only deactivated accounts and \"Deleted\" shows only deleted accounts; the URL/status filter follows the selected tab.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LST-008",
+     "title": "Search filters the account list by username",
+     "steps": [
+      "Type a known username (e.g. @rosetestbox) into the search box and press Enter."
+     ],
+     "expected": "List updates to show only accounts whose username matches the search term.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-LST-009",
+     "title": "Search also matches on full name, email and phone number",
+     "steps": [
+      "Search with a known full name, then its email address, then its phone number."
+     ],
+     "expected": "Each search returns the matching account, confirming Search covers more than just username.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "updated",
+     "note": "Now automated: each search must return the same account. v1 note: Unconfirmed: the search scope beyond username was not visible in the delivered screens — verify which fields are actually indexed once implemented."
+    },
+    {
+     "id": "USR-LST-010",
+     "title": "Search with no matching account shows an empty state",
+     "steps": [
+      "Type a value that matches no account into the search field."
+     ],
+     "expected": "Table shows a clear empty state (\"No data\" illustration or an accounts-specific message) instead of stale rows; result counter reads 0 results.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-LST-011",
+     "title": "Refresh icon reloads the account list",
+     "steps": [
+      "Click the refresh/reload icon next to the search bar."
+     ],
+     "expected": "List reloads current data for the active tab.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LST-012",
+     "title": "Filters button opens the Filter by panel",
+     "steps": [
+      "Click the \"Filters\" button."
+     ],
+     "expected": "A side panel titled \"Filter by\" slides in for narrowing the account list.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LST-013",
+     "title": "Export button is present on the Accounts list",
+     "steps": [
+      "Click the \"Export\" button."
+     ],
+     "expected": "Export button is visible next to Filters. The export file itself is deferred (no export screen designed).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "updated",
+     "note": "Export flow not designed: only the entry point is tested."
+    },
+    {
+     "id": "USR-LST-014",
+     "title": "Pagination controls behave as in other modules",
+     "steps": [
+      "Change \"Per page\" and navigate using page numbers and arrows."
+     ],
+     "expected": "Per page selector and page numbers/arrows work; previous arrow is disabled on page 1; the counter reads \"Showing X to Y of Z results\" with correct numbers (e.g. \"Showing 1 to 20 of 135 results\").",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "updated",
+     "note": "v1 note: Pagination result counter's stray comma (e.g. \"Showing 1 to 8 of, 500 results\") is the same known cross-app copy defect noted in prior modules — correct silently, not a new finding."
+    },
+    {
+     "id": "USR-LST-015",
+     "title": "Clicking a username or \"See details\" opens the correct Account details",
+     "steps": [
+      "Click \"See details\" on a specific row (e.g. @delasap001)."
+     ],
+     "expected": "Admin is navigated to Account details for @delasap001, defaulting to the Products overview tab, with matching name/email/phone.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-LST-016",
+     "title": "Row-level and header checkboxes support multi-select on the accounts table",
+     "steps": [
+      "Click the header checkbox, then an individual row checkbox."
+     ],
+     "expected": "Header checkbox selects/deselects all visible rows; individual row checkboxes toggle independently.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LST-017",
+     "title": "Search box placeholder reads \"Search account...\"",
+     "steps": [
+      "Look at the search box."
+     ],
+     "expected": "Placeholder reads \"Search account...\" (Figma 1148:90703).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-LST-018",
+     "title": "Result counter shows a valid range on page 1",
+     "steps": [
+      "Open the Accounts list.",
+      "Read the result counter."
+     ],
+     "expected": "Counter reads \"Showing 1 to N of Z results\" with 1 ≤ N ≤ Z (never negative or \"-19 to 0\").",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "new"
+    },
+    {
+     "id": "USR-LST-019",
+     "title": "Page 2 shows the next rows and the counter follows",
+     "steps": [
+      "Click page \"2\"."
+     ],
+     "expected": "Rows change; counter starts at (page size + 1); page 2 is the active page.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-LST-020",
+     "title": "Each status tab keeps its own URL and result count",
+     "steps": [
+      "Click Frozen, Deactivated, Deleted in turn.",
+      "Note the URL and counter each time."
+     ],
+     "expected": "Each tab sets its own status (e.g. ?status=frozen / deactivated / deleted) and its own result count.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-LST-021",
+     "title": "Deleted tab rows do not open as active accounts",
+     "steps": [
+      "Open \"See details\" on a Deleted-tab row."
+     ],
+     "expected": "Account details shows the red banner \"This account has been deleted!\" and a \"Deleted\" badge (Figma 1615:111592).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-LST-022",
+     "title": "Clearing the search restores the full list",
+     "steps": [
+      "Search for a username.",
+      "Clear the search box and press Enter."
+     ],
+     "expected": "Full list and its original result count come back.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-LST-023",
+     "title": "Rows show \"-\" (not \"null\") for missing values",
+     "steps": [
+      "Scan the Full name / Email columns on every tab."
+     ],
+     "expected": "Missing values show \"-\"; the raw text \"null\" never appears in a cell.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "2",
+   "name": "Accounts List Filters",
+   "figma": "not designed for User Management (Country + Registration date confirmed by product)",
+   "pre": "Agent is logged into the Admin Panel with a Customer Service (CS) role; User management > Accounts list (/users) is open. The Filters panel (\"Filter by\") is open.",
+   "cases": [
+    {
+     "id": "USR-LSF-001",
+     "title": "Filter by panel opens with Country and Registration date fields",
+     "steps": [
+      "Open the Filters panel from the Accounts list."
+     ],
+     "expected": "Panel \"Filter by\" opens with a Country selector and a Registration date range (start/end), plus Reset and Apply filters (confirmed by product; no Figma frame yet).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "note": "v1 note: Confirmed with Serge: the filter panel is not yet designed, but will filter by Country and Registration date. Suggest also considering a User type filter (Client vs. other types seen in the profile panel) or a KYC/verification status filter, since both are already surfaced elsewhere on Account details and would help agents triage — flag as a suggestion for Serge, not a requirement."
+    },
+    {
+     "id": "USR-LSF-002",
+     "title": "The Country filter returns only matching accounts",
+     "steps": [
+      "Select a country and apply filters."
+     ],
+     "expected": "Account list shows only accounts whose Country matches the selection.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-003",
+     "title": "The Registration date range filter returns accounts within the selected range",
+     "steps": [
+      "Select a start and end date and apply filters."
+     ],
+     "expected": "Account list shows only accounts registered within the selected range.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-004",
+     "title": "Combining Country and Registration date applies AND logic",
+     "steps": [
+      "Set both filter fields and apply filters."
+     ],
+     "expected": "Returned accounts satisfy both selected criteria simultaneously.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-005",
+     "title": "\"Reset\" clears all filter fields",
+     "steps": [
+      "Set several filter values, then click \"Reset\"."
+     ],
+     "expected": "All filter fields clear back to their default empty state.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-006",
+     "title": "Filters apply within the currently selected phase tab",
+     "steps": [
+      "Switch to the \"Frozen\" tab, then apply a filter."
+     ],
+     "expected": "Filter is applied only to Frozen-tab accounts; switching back to Active shows the Active tab's own (unfiltered) list.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-007",
+     "title": "Closing the filter panel without applying discards unsaved selections",
+     "steps": [
+      "Enter filter values, then close the panel via the X icon without applying."
+     ],
+     "expected": "Account list remains in its previously applied (or default) state; unsaved selections are discarded.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-008",
+     "title": "Export from a filtered view exports only the filtered subset",
+     "steps": [
+      "Apply a filter, then click \"Export\"."
+     ],
+     "expected": "Downloaded file contains only the filtered subset of accounts.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-009",
+     "title": "An agent without Export permission does not see the Export button",
+     "steps": [
+      "Log in as an agent role without Export permission."
+     ],
+     "expected": "Export button is hidden or disabled for this role.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-LSF-010",
+     "title": "Apply filters is disabled until at least one criterion is set",
+     "steps": [
+      "Open the panel with no filter values entered."
+     ],
+     "expected": "\"Apply filters\" is disabled until at least one filter value is provided.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "3",
+   "name": "Account Details — Profile panel, actions and KYC states",
+   "figma": "1148:90717 (Overview), 1549:49711 (\"...\" menu), 1498:97956 (KYC states: User Verified / Verification Failed / Verification Submitted / Not KYC)",
+   "pre": "Agent has opened Account details for a Confirmed (active) account with Wallet, Savings box, Goal savings and Bond investment positions; Products overview tab is shown.",
+   "cases": [
+    {
+     "id": "USR-DET-001",
+     "title": "Breadcrumb and Back to account list navigation",
+     "steps": [
+      "Observe the breadcrumb and top-left link on Account details."
+     ],
+     "expected": "Breadcrumb reads \"<user icon> / @<username>\" and a \"Back to account list\" link sits above the tabs.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-002",
+     "title": "Products overview, Payment methods and Security tabs are present with the designed labels",
+     "steps": [
+      "Observe the tab row on Account details."
+     ],
+     "expected": "Three tabs labelled exactly \"Products overview\", \"Payment methods\", \"Security\" (Figma 1148:90717); Products overview selected by default.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DET-003",
+     "title": "The profile panel shows avatar, verified tick, full name, Confirmed badge, and username with copy icon",
+     "steps": [
+      "Observe the profile panel on the right of Account details."
+     ],
+     "expected": "Panel shows avatar initials with a KYC tick, full name, a \"Confirmed\" status badge, and the username with a working copy icon.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DET-004",
+     "title": "\"Edit details\" opens a menu with Email address and Phone number",
+     "steps": [
+      "Click \"Edit details\" in the profile panel."
+     ],
+     "expected": "A dropdown opens with two options: \"Email address\" and \"Phone number\" (Figma 1525:119276 / 1536:125636). Each option starts its update flow.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "Edit details is a dropdown in Figma, not a single edit form."
+    },
+    {
+     "id": "USR-DET-005",
+     "title": "\"Change user type\" is disabled for the Customer Service (CS) profile",
+     "steps": [
+      "Log in as the Customer Service (CS) profile — the profile being delivered for the September 1 MVP — and observe \"Change user type\" on Account details."
+     ],
+     "expected": "Button renders visibly disabled for the CS profile, since CS does not have permission to change user type. Confirmed by design: the button is intentionally present-but-disabled now so that other admin profiles planned for a future iteration (which will have this permission) don't need a separate layout.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true,
+     "note": "v1 note: Open question: no modal/flow behind this button has been designed yet (for the future profiles that will have permission) — nothing to test there until it exists; this case only covers the disabled state for CS."
+    },
+    {
+     "id": "USR-DET-006",
+     "title": "\"...\" menu lists Deactivate account, Freeze account and Delete account",
+     "steps": [
+      "Click the \"...\" button next to \"Change user type\"."
+     ],
+     "expected": "Menu items in order: \"Deactivate account\", \"Freeze account\", \"Delete account\" (Delete in red) (Figma 1549:49711).",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "v1 open question answered: the menu contents are now designed."
+    },
+    {
+     "id": "USR-DET-007",
+     "title": "The Personal Infos panel shows Email and Phone number with a verified-check badge when confirmed",
+     "steps": [
+      "Observe the Email and Phone number rows in the Personal Infos panel for a fully-verified user."
+     ],
+     "expected": "Both fields show their value alongside a green check badge indicating confirmed/verified status.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DET-008",
+     "title": "Email shows a warning icon instead of a check when the address is unverified",
+     "steps": [
+      "Open Account details for a user whose email is not yet verified."
+     ],
+     "expected": "Email shows a red warning icon instead of the green check when the address is not verified (Figma \"Not KYC\" frame 1498:102393).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-009",
+     "title": "Not-verified account shows the \"This user hasn't verified yet!\" alert with a link to KYC",
+     "steps": [
+      "Open Account details for a user who has not completed verification."
+     ],
+     "expected": "Dismissible info alert titled \"This user hasn't verified yet!\" with a \"Go to KYC page\" link to the Kyc & Comp. module (Figma 1498:102393).",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "v1 note: The exact copy captured from the design (\"go th[rough]...\") reads as truncated/unfinished placeholder text — worth a light copy pass, though not a functional defect. Also confirms module scope: KYC/compliance review itself lives in the separate Kyc & Comp. module — this screen only surfaces the alert and links out, it doesn't manage verification itself."
+    },
+    {
+     "id": "USR-DET-010",
+     "title": "The alert can be dismissed and does not block interacting with the rest of the page",
+     "steps": [
+      "Dismiss the unverified or deactivated alert via its close control."
+     ],
+     "expected": "Alert closes on its X; the rest of the page stays usable.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-011",
+     "title": "Personal Infos panel shows Date of birth, Gender, Country of citizenship, Country of residence, Referral code",
+     "steps": [
+      "Observe the remaining fields in the User section of the panel."
+     ],
+     "expected": "All five fields are present and correctly populated; Referral code has a working copy icon.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DET-012",
+     "title": "The Company section shows User type, Company, Created by, Created at",
+     "steps": [
+      "Observe the Company section below the divider in the Personal Infos panel."
+     ],
+     "expected": "All four fields are present and correctly populated, with \"Created by\" showing the creating agent's @username.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DET-013",
+     "title": "The Personal Infos panel remains visible and unchanged across all three tabs",
+     "steps": [
+      "Switch between Products overview, Payment methods, and Security tabs."
+     ],
+     "expected": "The profile/Personal Infos panel on the right stays visible and its content is unchanged across all tabs.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DET-014",
+     "title": "Deep-linking directly to an Account details URL loads the correct account",
+     "steps": [
+      "Navigate directly to an Account details URL for a known username without going through the list first."
+     ],
+     "expected": "Correct account's details load directly, defaulting to Products overview.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-015",
+     "title": "Account details for a user with no active products shows an appropriate empty state on Products overview",
+     "steps": [
+      "Open Account details for a user who has not activated any Wallet/Savings/Goal/Bond product."
+     ],
+     "expected": "Products overview tab shows an appropriate empty state instead of blank or broken cards.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-016",
+     "title": "An agent without Manual Operations permission does not see edit/deactivate actions",
+     "steps": [
+      "Log in as an agent role without Manual Operations permission and open Account details."
+     ],
+     "expected": "\"Edit details\", the \"...\" menu's action items, and other mutating actions are hidden or disabled for this role.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-017",
+     "title": "Page title/browser tab reflects the currently viewed account",
+     "steps": [
+      "Observe the browser tab title while viewing Account details."
+     ],
+     "expected": "Browser tab title refers to the account (e.g. \"@username — Account details\"). Generic titles (\"Account overview\") are flagged.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-018",
+     "title": "Left-nav User management item highlights when on any Account details page",
+     "steps": [
+      "Navigate to Account details from the Accounts list."
+     ],
+     "expected": "\"User management\" remains highlighted as the active section in the left nav.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-019",
+     "title": "Account details pages render correctly at common desktop resolutions",
+     "steps": [
+      "Load Account details at 1280px, 1440px, and 1920px widths."
+     ],
+     "expected": "Layout remains usable with no overlapping or clipped elements at any tested width, including the fixed-width Personal Infos panel.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DET-020",
+     "title": "Username copy icon copies the username",
+     "steps": [
+      "Click the copy icon next to the username."
+     ],
+     "expected": "Clipboard holds the username shown in the panel.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DET-021",
+     "title": "Referral code copy icon copies the referral code",
+     "steps": [
+      "Click the copy icon next to Referral code."
+     ],
+     "expected": "Clipboard holds the referral code shown.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DET-022",
+     "title": "KYC pending account shows \"Identity verification is pending!\"",
+     "steps": [
+      "Open an account whose KYC was submitted and is under review."
+     ],
+     "expected": "Orange alert \"Identity verification is pending!\" with \"Go to KYC page\"; orange avatar badge (Figma 1519:111001).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Account with KYC submitted (PHX_UM_KYC_PENDING_USERNAME)."
+    },
+    {
+     "id": "USR-DET-023",
+     "title": "KYC rejected account shows \"Identity verification has been rejected!\"",
+     "steps": [
+      "Open an account whose KYC was rejected."
+     ],
+     "expected": "Red alert \"Identity verification has been rejected!\" with \"Go to KYC page\"; red avatar badge (Figma 1519:107609).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Account with KYC rejected (PHX_UM_KYC_REJECTED_USERNAME)."
+    },
+    {
+     "id": "USR-DET-024",
+     "title": "KYC-verified account shows no verification alert",
+     "steps": [
+      "Open a KYC-verified account."
+     ],
+     "expected": "No KYC alert; green avatar tick; email and phone show green checks (Figma 1498:97974).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "KYC-verified account (PHX_UM_USERNAME)."
+    },
+    {
+     "id": "USR-DET-025",
+     "title": "KYC alert copy is complete and correctly spelled",
+     "steps": [
+      "Open an account that shows any KYC alert.",
+      "Read the alert body."
+     ],
+     "expected": "Body text is a full sentence. Design feedback: Figma reads \"You can reach to him, or go th\" (cut off). Flag typos such as \"You ca reach to him\".",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DET-026",
+     "title": "\"Go to KYC page\" opens this user in Kyc & Comp.",
+     "steps": [
+      "Click \"Go to KYC page\" on the KYC alert."
+     ],
+     "expected": "The Kyc & Comp. module opens on this user's KYC request.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DET-027",
+     "title": "Change user type is visible but disabled",
+     "steps": [
+      "Look at the action buttons."
+     ],
+     "expected": "\"Change user type\" is shown greyed out and cannot be clicked (CS profile).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "note": "Split from USR-DET-005 so the disabled state is checked on its own."
+    },
+    {
+     "id": "USR-DET-028",
+     "title": "Frozen account shows the blue banner and a Frozen badge",
+     "steps": [
+      "Open a Frozen account."
+     ],
+     "expected": "Blue banner \"This account has been frozen!\" with \"See details\"; badge \"Frozen\"; no action buttons. Design feedback: Figma spells it \"froozen\" (1611:46367).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Any account on the Frozen tab."
+    },
+    {
+     "id": "USR-DET-029",
+     "title": "Deleted account shows the red banner and a Deleted badge",
+     "steps": [
+      "Open a Deleted account."
+     ],
+     "expected": "Red banner \"This account has been deleted!\" with \"See details\"; badge \"Deleted\"; no action buttons (Figma 1615:111592).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Any account on the Deleted tab."
+    }
+   ]
+  },
+  {
+   "id": "4",
+   "name": "Account Details — Products overview tab",
+   "figma": "1148:90717",
+   "pre": "Agent has opened Account details for a Confirmed (active) account with Wallet, Savings box, Goal savings and Bond investment positions; Products overview tab is shown.",
+   "cases": [
+    {
+     "id": "USR-PRD-001",
+     "title": "Products overview is the default tab on Account details",
+     "steps": [
+      "Open Account details for any confirmed account."
+     ],
+     "expected": "The \"Products overview\" tab is selected/active by default when the page loads.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PRD-002",
+     "title": "The Wallet card shows Total balance and Status, with a working View details link",
+     "steps": [
+      "Observe the Wallet card and click \"View details\"."
+     ],
+     "expected": "Card shows Total balance in XAF and a Status badge (e.g. Active); \"View details\" navigates to the Wallet module for this user.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PRD-003",
+     "title": "The Savings box card shows Total balance, Cash bonus, and free-withdrawal availability",
+     "steps": [
+      "Observe the Savings box card."
+     ],
+     "expected": "Card titled \"Savings box\" shows Total balance, Cash bonus (green) and \"NN free withdrawal available\" (Figma: \"01 free withdrawal available\").",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-PRD-004",
+     "title": "The Goal savings card shows Total balance, Cash bonus, a segmented progress bar, and a per-goal breakdown",
+     "steps": [
+      "Observe the Goal savings card for a user with multiple goals."
+     ],
+     "expected": "Card shows Total balance, Cash bonus, a multi-segment bar representing each goal's share, and a legend listing each goal with its amount (e.g. \"Buy a car — 150,652 XAF\").",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PRD-005",
+     "title": "The Bond investment card shows Total balance, Total interests, a progress bar, and a per-bond breakdown",
+     "steps": [
+      "Observe the Bond investment card for a user with one or more bonds."
+     ],
+     "expected": "Card shows Total balance, Total interests (in green), a progress bar, and a legend listing each bond with its invested amount (e.g. \"OTA Cameroon — 2,000 XAF\").",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PRD-006",
+     "title": "Each card's \"Total of NN <item>(s)\" summary line matches the number of legend rows shown",
+     "steps": [
+      "Count the legend rows on the Goal savings and Bond investment cards and compare to the \"Total of NN goal(s)\"/bond(s) text."
+     ],
+     "expected": "Counts match exactly.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PRD-007",
+     "title": "\"View details\" on the Goal savings card navigates to that user's Goal savings records",
+     "steps": [
+      "Click \"View details\" on the Goal savings card."
+     ],
+     "expected": "Admin is navigated to the Goal savings module, scoped to this user.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PRD-008",
+     "title": "\"View details\" on the Bond investment card navigates to that user's Bond investment records",
+     "steps": [
+      "Click \"View details\" on the Bond investment card."
+     ],
+     "expected": "Admin is navigated to the Bond investment module, scoped to this user.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PRD-009",
+     "title": "The Wallet card's Status badge is the wallet's own status, distinct from the account-level status",
+     "steps": [
+      "Compare the Wallet card's Status badge (e.g. \"Active\") with the account-level status badge in the profile panel (e.g. \"Confirmed\")."
+     ],
+     "expected": "These are two separate concepts that happen to use similar wording — the Wallet card's \"Active\" describes the wallet product itself, not the account. Confirm both can vary independently (e.g. a wallet could theoretically show a different status while the account itself is Confirmed/Active) rather than assuming they're the same field displayed twice.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false,
+     "note": "v1 note: Worth flagging to avoid confusion during test authorship and execution: \"Active\" appears in at least three different contexts in this module (accounts-list tab, Wallet card status, and potentially others) — make sure each is verified against its own data source, not conflated."
+    },
+    {
+     "id": "USR-PRD-010",
+     "title": "The Goal savings card shows an empty state when the user has no goals",
+     "steps": [
+      "Open Products overview for a user with no active goals."
+     ],
+     "expected": "Goal savings card shows the empty state \"No active goal set!\" with a short explanation instead of an empty legend/bar.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PRD-011",
+     "title": "A product with zero balance still renders its card without error",
+     "steps": [
+      "Open Products overview for a user with a Wallet balance of 0 XAF."
+     ],
+     "expected": "Wallet card renders correctly showing \"0 XAF\" rather than breaking or being hidden unexpectedly.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PRD-012",
+     "title": "Currency formatting is consistent across all four product cards",
+     "steps": [
+      "Compare the number formatting of Total balance across Wallet, Savings box, Goal savings, and Bond investment cards."
+     ],
+     "expected": "All values use consistent thousands-separator formatting and the \"XAF\" suffix.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PRD-013",
+     "title": "Deactivated banner is visible from the Products overview tab",
+     "steps": [
+      "Open Products overview for a Deactivated account."
+     ],
+     "expected": "Orange banner \"This account has been deactivated!\" with a \"See details\" button is shown above the product cards (Figma 1577:97491).",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "pre": "Admin is viewing Account details for a Deactivated account.",
+     "change": "updated"
+    },
+    {
+     "id": "USR-PRD-014",
+     "title": "A non-Confirmed account hides the profile action buttons",
+     "steps": [
+      "Open each non-Confirmed account (Deactivated, Frozen, Deleted).",
+      "Look at the profile panel under the username."
+     ],
+     "expected": "Edit details, Change user type and \"...\" are not shown for Deactivated, Frozen or Deleted accounts (Figma 1577:97491, 1611:46367, 1615:111592).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent opens Account details for a Deactivated, Frozen or Deleted account.",
+     "change": "updated"
+    },
+    {
+     "id": "USR-PRD-015",
+     "title": "Card titles match the design",
+     "steps": [
+      "Read the four card titles."
+     ],
+     "expected": "Titles are \"Wallet\", \"Savings box\", \"Goal savings\", \"Bond investment\" (Figma 1148:90717).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-PRD-016",
+     "title": "Savings box free-withdrawal line is spelled correctly",
+     "steps": [
+      "Read the line under the Savings box balance."
+     ],
+     "expected": "Reads \"NN free withdrawal(s) available\"; flag misspellings such as \"withdrawl\".",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-PRD-017",
+     "title": "Goal savings empty state copy is grammatical",
+     "steps": [
+      "Open an account with no goal."
+     ],
+     "expected": "Empty state \"No active goal set!\" with a grammatical explanation (flag \"This user haven't setup a savings goal\").",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-PRD-018",
+     "title": "Product counts use the \"Total of NN goal(s)/bond(s)\" format",
+     "steps": [
+      "Read the Goal savings and Bond investment footers."
+     ],
+     "expected": "Footers read \"Total of 03 goal(s)\" / \"Total of 01 bond(s)\" (two digits, Figma).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "5",
+   "name": "Account Details — Payment methods tab",
+   "figma": "1667:147125 (Active / Inactive / Active - one method)",
+   "pre": "Agent is on Account details > Payment methods for an account with two or more payment methods.",
+   "cases": [
+    {
+     "id": "USR-PAY-001",
+     "title": "Payment methods table columns display in correct order",
+     "steps": [
+      "Observe the table header on the Payment methods tab."
+     ],
+     "expected": "Columns in order: Operator, Phone number, Status, Date created, then an actions column (Figma 1667:147199).",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PAY-002",
+     "title": "Status badge renders \"Active\" for an enabled payment method",
+     "steps": [
+      "Observe the Status column for an active method."
+     ],
+     "expected": "Active methods show a green-dot \"Active\" badge; inactive methods show a red-dot \"Inactive\" badge.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-003",
+     "title": "Each row shows a power icon and an edit (pencil) icon",
+     "steps": [
+      "Observe the row-level action icons."
+     ],
+     "expected": "Active rows: red power icon (deactivate) + pencil. Inactive rows: green power icon (reactivate) + pencil (Figma 1667:152151).",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-PAY-004",
+     "title": "\"Add method\" is disabled once every integrated operator for the user's country is already registered",
+     "steps": [
+      "Open the Payment methods tab for a user who already has an active method for every payment operator integrated in their country."
+     ],
+     "expected": "\"Add method\" renders disabled (grey) when the user already has a method for every operator in their country (Figma 1667:147199).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PAY-005",
+     "title": "\"Add method\" is enabled when at least one integrated operator is not yet registered",
+     "steps": [
+      "Open the Payment methods tab for a user whose country supports 2+ operators but who has only registered one."
+     ],
+     "expected": "\"Add method\" renders enabled (purple) when at least one operator is not registered (Figma 1667:152151).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PAY-006",
+     "title": "Filters button opens a filter panel for payment methods",
+     "steps": [
+      "Click \"Filters\" on the Payment methods tab."
+     ],
+     "expected": "A \"Filters\" button is shown next to the refresh icon and opens a filter panel (Figma 1667:152151).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-007",
+     "title": "Refresh icon reloads the payment methods list",
+     "steps": [
+      "Click the refresh icon."
+     ],
+     "expected": "Table reloads current data.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-008",
+     "title": "Export button is present on the Payment methods tab",
+     "steps": [
+      "Click \"Export\"."
+     ],
+     "expected": "Export button is visible. The export file itself is deferred (no export screen designed).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-PAY-009",
+     "title": "Pagination on the Payment methods tab behaves consistently with other list pages",
+     "steps": [
+      "Change Per page and navigate using page numbers and arrows for an account with many methods."
+     ],
+     "expected": "Pagination behaves consistently with other Ejara Admin Panel list pages.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-010",
+     "title": "The Payment methods tab shows an empty state when the account has no payment methods",
+     "steps": [
+      "Open the Payment methods tab for an account that has never added one."
+     ],
+     "expected": "Table shows an empty state (\"No data\") and the counter reads \"Showing 0 to 0 of 0 results\".",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-011",
+     "title": "Clicking the edit icon opens an edit flow pre-populated with the method's current details",
+     "steps": [
+      "Click the edit icon on a payment method row."
+     ],
+     "expected": "An edit flow opens with the Operator and Phone number fields pre-filled with the existing values.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-012",
+     "title": "A Deactivated payment method still appears in the list with the correct Status",
+     "steps": [
+      "Deactivate a payment method, then observe the list."
+     ],
+     "expected": "After deactivation the row stays in the list with a red-dot \"Inactive\" badge and a green power icon.",
+     "priority": "High",
+     "automate": false,
+     "smoke": true
+    },
+    {
+     "id": "USR-PAY-013",
+     "title": "Header checkbox and row checkboxes support multi-select on the payment methods table",
+     "steps": [
+      "Click the header checkbox, then an individual row checkbox."
+     ],
+     "expected": "Header checkbox selects/deselects all visible rows; individual row checkboxes toggle independently.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PAY-014",
+     "title": "Payment methods tab has refresh, Filters, Add method and Export controls",
+     "steps": [
+      "Look at the toolbar above the table."
+     ],
+     "expected": "Refresh icon, \"Filters\", \"Add method +\" and \"Export\" are shown (Figma 1667:152151).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-PAY-015",
+     "title": "Date created uses the module date format",
+     "steps": [
+      "Read the Date created column."
+     ],
+     "expected": "Dates read like \"Mar 25, 2025 11:33 AM\" (Figma).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "6",
+   "name": "Manual operation — Add payment method",
+   "figma": "1667:154404 (Details → Confirmation code → Review details)",
+   "pre": "Agent has clicked \"Add method\" on the Payment methods tab (Details step).",
+   "cases": [
+    {
+     "id": "USR-ADDM-001",
+     "title": "Clicking \"Add method\" (when enabled) opens the Details step of the Add flow",
+     "steps": [
+      "Click \"Add method\" on the Payment methods tab."
+     ],
+     "expected": "Full-page flow opens with breadcrumb \"@<username> / Add payment method\" and a 3-step stepper: Details, Confirmation code, Review details (Figma 1667:154457).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Admin is on Account details > Payment methods tab, with two or more payment methods listed.",
+     "change": "updated"
+    },
+    {
+     "id": "USR-ADDM-002",
+     "title": "Details step has Full name, Payment type, Payment mode, New phone number and a WhatsApp option",
+     "steps": [
+      "Observe the fields available on the Details step."
+     ],
+     "expected": "Fields: Full name (pre-filled with the account name), Payment type, Payment mode, New phone number (country code prefix), a \"Verify with WhatsApp\" switch, and the info box \"A code will be sent to this phone number!\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-ADDM-003",
+     "title": "A phone number is validated against the selected operator's expected format",
+     "steps": [
+      "Enter a phone number with an invalid format or prefix for the selected operator."
+     ],
+     "expected": "System shows a validation error and blocks proceeding until a correctly-formatted number is entered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-ADDM-004",
+     "title": "Entering an already-registered phone number for this account is handled",
+     "steps": [
+      "Attempt to add a payment method using a phone number identical to an existing active method."
+     ],
+     "expected": "System blocks the duplicate with a clear validation message.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-ADDM-005",
+     "title": "The \"Continue\"/\"Review details\" action is disabled until required fields are valid",
+     "steps": [
+      "Observe the primary action button with fields empty, then fill them correctly."
+     ],
+     "expected": "\"Review details\" is disabled while required fields are empty or invalid and enables once they are valid.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-ADDM-006",
+     "title": "Cancel discards the new method and returns to the Payment methods tab",
+     "steps": [
+      "Enter data into the Details step, then click \"Cancel\"."
+     ],
+     "expected": "Panel closes without creating a new method; the Payment methods table is unchanged.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-ADDM-007",
+     "title": "Confirmation code step: 6-digit code sent to the new number, countdown, resend",
+     "steps": [
+      "Complete the Details step and proceed to Review."
+     ],
+     "expected": "Heading \"Confirmation code\", text \"A 6-digit code was sent to <phone>. Enter it to finish updating.\", six code boxes, \"OTP code will expire in 2:00\", \"Didn't received the code? Resend code\", a \"Verify with WhatsApp / Send code\" box and the callout \"Grab the code from the user!\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent has filled the Details step and continued (Confirmation code step).",
+     "change": "updated",
+     "note": "Figma adds a Confirmation code step before Review (customer code, not admin TOTP)."
+    },
+    {
+     "id": "USR-ADDM-008",
+     "title": "Back from the Review step preserves the entered values",
+     "steps": [
+      "From the Review step, click \"Back\"."
+     ],
+     "expected": "Admin returns to the Details step with the previously entered Operator and Phone number still populated.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-ADDM-009",
+     "title": "Confirming adds the new method with Status \"Active\" and the current date",
+     "steps": [
+      "Complete and confirm the Add payment method flow."
+     ],
+     "expected": "After Review details and confirm, a new row appears with the operator, phone number, \"Active\" badge and today's date.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Disposable test account; a valid customer code is available."
+    },
+    {
+     "id": "USR-ADDM-010",
+     "title": "The code step verifies the CUSTOMER's number, not the admin's TOTP",
+     "steps": [
+      "Reach the final confirmation action of the Add payment method flow."
+     ],
+     "expected": "The code is sent to the new phone number (customer). No admin TOTP prompt appears in the designed flow.",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-ADDM-011",
+     "title": "An invalid or expired code blocks progress to Review",
+     "steps": [
+      "Enter an invalid or expired OTP code at the verification prompt and submit."
+     ],
+     "expected": "The code is rejected with a clear error; the agent stays on Confirmation code and can resend.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-ADDM-012",
+     "title": "Back from Confirmation code keeps the Details values",
+     "steps": [
+      "Fill Details and continue to Confirmation code.",
+      "Click Back."
+     ],
+     "expected": "Details step shows the values entered before (operator, phone number).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-ADDM-013",
+     "title": "Full name is pre-filled with the account holder's name",
+     "steps": [
+      "Open Add method.",
+      "Read Full name."
+     ],
+     "expected": "Full name equals the profile full name.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ADDM-014",
+     "title": "Payment mode is disabled until a Payment type is chosen",
+     "steps": [
+      "Open Add method.",
+      "Check Payment mode before and after choosing a Payment type."
+     ],
+     "expected": "Payment mode is disabled first and lists operators (e.g. Orange Money, MTN Mobile Money) once a type is chosen.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ADDM-015",
+     "title": "New phone number shows the user's country code",
+     "steps": [
+      "Open Add method.",
+      "Look at New phone number."
+     ],
+     "expected": "Field is prefixed with the account country code (e.g. +237 for Cameroon).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ADDM-016",
+     "title": "WhatsApp option is present on the Details step",
+     "steps": [
+      "Open Add method."
+     ],
+     "expected": "A \"Verify with WhatsApp\" switch with \"We'll send a verification code via WhatsApp.\" is shown (off by default).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ADDM-017",
+     "title": "Details step info box says a code will be sent",
+     "steps": [
+      "Open Add method.",
+      "Read the info box."
+     ],
+     "expected": "Info box \"A code will be sent to this phone number!\" — \"We'll send a code to the client's new phone number to confirm it's the right one.\"",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ADDM-018",
+     "title": "Details step has no unrelated subtitle",
+     "steps": [
+      "Open Add method.",
+      "Read the text under \"Details\"."
+     ],
+     "expected": "No subtitle, or one about payment methods. Flag copy from other flows such as \"Ensure the documents are clear and visible.\"",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ADDM-019",
+     "title": "Breadcrumb names the Add payment method flow on every step",
+     "steps": [
+      "Go through Details and Confirmation code.",
+      "Read the breadcrumb on each."
+     ],
+     "expected": "Breadcrumb reads \"@<username> / Add payment method\" on every step. Design feedback: the Figma Confirmation code frame (1667:155877) reads \"Update details\".",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "7",
+   "name": "Manual operation — Deactivate payment method",
+   "figma": "1667:152939 (Details → Review details)",
+   "pre": "Agent has clicked the red power icon on an Active payment method (Details step).",
+   "cases": [
+    {
+     "id": "USR-DEAM-001",
+     "title": "Clicking the power icon on a payment method row opens the Deactivate flow",
+     "steps": [
+      "Click the power icon on an active payment method row."
+     ],
+     "expected": "A panel opens on the Details step for deactivating that specific method.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Admin is on Account details > Payment methods tab, with two or more payment methods listed."
+    },
+    {
+     "id": "USR-DEAM-002",
+     "title": "The Details step requires a reason for deactivation",
+     "steps": [
+      "Leave the reason field empty and attempt to proceed."
+     ],
+     "expected": "\"Review details\" stays disabled until \"Reason for deactivation\" has text.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DEAM-003",
+     "title": "Cancel discards the deactivation and leaves the method Active",
+     "steps": [
+      "Enter a reason, then click \"Cancel\"."
+     ],
+     "expected": "Panel closes without changing the method's status; it remains Active in the table.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DEAM-004",
+     "title": "The Review details step identifies the correct payment method (Operator, Phone number) and reason",
+     "steps": [
+      "Complete the Details step and proceed to Review for a specific method."
+     ],
+     "expected": "Review shows the action, client, date and reason (with eye toggle), plus which operator/phone number is being deactivated.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent has entered a reason and clicked Review details."
+    },
+    {
+     "id": "USR-DEAM-005",
+     "title": "Back from the Review step preserves the entered reason",
+     "steps": [
+      "From the Review step, click \"Back\"."
+     ],
+     "expected": "Admin returns to the Details step with the previously entered reason still populated.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Review details step."
+    },
+    {
+     "id": "USR-DEAM-006",
+     "title": "Confirming deactivation updates the method's Status without removing the row",
+     "steps": [
+      "Complete and confirm the deactivation."
+     ],
+     "expected": "The method's Status badge updates (e.g. to \"Inactive\"); the row remains visible in the table rather than disappearing.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DEAM-007",
+     "title": "No admin OTP step: Review details is the last step",
+     "steps": [
+      "Reach the final confirmation action of the Deactivate payment method flow."
+     ],
+     "expected": "Figma shows Details → Review details only; the method is deactivated from the Review step. Flag if the build adds or skips a step.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DEAM-008",
+     "title": "An invalid or expired OTP blocks the deactivation",
+     "steps": [
+      "Enter an invalid or expired OTP code at the verification prompt and submit."
+     ],
+     "expected": "Not applicable to the designed flow (no OTP step). Kept for the live build: if an OTP appears, an invalid code must block deactivation.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DEAM-009",
+     "title": "Deactivating a payment method does not affect the account's other active methods",
+     "steps": [
+      "Deactivate one of two active payment methods and observe the other."
+     ],
+     "expected": "The untouched method remains Active with its own Status/date unchanged.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin is on Account details > Payment methods tab, with two or more payment methods listed."
+    },
+    {
+     "id": "USR-DEAM-010",
+     "title": "An inactive method offers a green reactivate icon, not deactivate",
+     "steps": [
+      "Observe the action icons on a method whose Status is already Inactive."
+     ],
+     "expected": "Inactive rows show a green power icon (reactivate) instead of the red one (Figma 1667:152151).",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin is on Account details > Payment methods tab, with two or more payment methods listed.",
+     "change": "updated"
+    },
+    {
+     "id": "USR-DEAM-011",
+     "title": "Details step warning is about the payment method, not the account",
+     "steps": [
+      "Open the deactivate flow for a method.",
+      "Read the warning box."
+     ],
+     "expected": "Warning explains the effect of deactivating the payment method. Design feedback: Figma 1667:154116 reuses \"Please note before you deactivate this account! Deactivating this account stops the customer from logging in…\".",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEAM-012",
+     "title": "Green power icon reactivates an inactive method",
+     "steps": [
+      "Click the green power icon on an Inactive method and finish the flow."
+     ],
+     "expected": "Method returns to \"Active\". No reactivation frames exist in Figma: confirm the flow with design.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEAM-013",
+     "title": "Breadcrumb reads \"Deactivate payment method\"",
+     "steps": [
+      "Open the deactivate flow."
+     ],
+     "expected": "Breadcrumb \"@<username> / Deactivate payment method\" (Figma 1667:154100).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "8",
+   "name": "Account Details — Security (MFA) tab",
+   "figma": "1519:114374 (Security, Email Activated), 1369:94437",
+   "pre": "Agent is on Account details > Security.",
+   "cases": [
+    {
+     "id": "USR-SEC-001",
+     "title": "The Security tab heading reads \"Multi-Factor Authentication (MFA)\"",
+     "steps": [
+      "Open the Security tab on Account details."
+     ],
+     "expected": "Page section displays heading \"Multi-Factor Authentication (MFA)\".",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-SEC-002",
+     "title": "The Security tab subtitle text matches its context",
+     "steps": [
+      "Read the subtitle beneath the \"Multi-Factor Authentication (MFA)\" heading."
+     ],
+     "expected": "Subtitle text is contextually accurate for the MFA section, rather than reused copy from a different page.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false,
+     "note": "v1 note: Subtitle currently reads \"Let agents locate the right user quickly, with enough summary.\" — reused from the Accounts list. Low-priority copy polish; Serge isn't focused on this level of detail right now."
+    },
+    {
+     "id": "USR-SEC-003",
+     "title": "Three MFA methods are listed: Email, Authenticator app, SMS",
+     "steps": [
+      "Observe the list of MFA methods."
+     ],
+     "expected": "Three rows with icons: \"Email\", \"Authenticator app\", \"SMS\" (Figma 1519:114500).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-SEC-004",
+     "title": "Each MFA method has its own working toggle reflecting its enabled/disabled state",
+     "steps": [
+      "Observe the toggle for each of the three MFA methods."
+     ],
+     "expected": "Each toggle accurately reflects whether that method is currently active for the user.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-SEC-005",
+     "title": "Switching off one method opens the flow for that method only",
+     "steps": [
+      "Click the toggle next to \"Authenticator app\" only."
+     ],
+     "expected": "Switching off Email opens \"Deactivate email 2FA\" (Details step); the other switches do not change.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-SEC-006",
+     "title": "\"Deactivate all\" button is present and visible regardless of how many methods are currently active",
+     "steps": [
+      "Observe the \"Deactivate all\" button in the top-right of the Security tab."
+     ],
+     "expected": "Button is visible; confirm whether it is disabled when zero methods are active.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-SEC-007",
+     "title": "Deactivating the last remaining active MFA method is allowed",
+     "steps": [
+      "Deactivate the last remaining active MFA method for a user via the individual method flow."
+     ],
+     "expected": "Deactivation succeeds; the user is left with zero active MFA methods. Confirmed by design: MFA is optional, a user is not required to have any method configured, so reducing to zero is normal, expected behaviour, not blocked.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-SEC-008",
+     "title": "The Security tab reuses the same Personal Infos panel as other tabs",
+     "steps": [
+      "Compare the profile/Personal Infos panel on the Security tab with the Products overview tab."
+     ],
+     "expected": "Same panel content and layout, confirming consistency across tabs.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-SEC-009",
+     "title": "Toggling a method reflects immediately in the list after successful confirmation",
+     "steps": [
+      "Deactivate the Email MFA method and complete the confirmation flow."
+     ],
+     "expected": "Email's toggle updates to the off state as soon as the flow completes, without requiring a manual page refresh.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-SEC-010",
+     "title": "The Security tab for a Deactivated account is read-only or shows an appropriate notice",
+     "steps": [
+      "Open the Security tab for a Deactivated account."
+     ],
+     "expected": "Toggles are disabled, or a notice explains that MFA management is unavailable while the account is deactivated.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "pre": "Admin is viewing Account details for a Deactivated account."
+    },
+    {
+     "id": "USR-SEC-011",
+     "title": "Keyboard accessibility of the MFA toggles (tab order, space/enter to activate)",
+     "steps": [
+      "Use Tab to focus each toggle and Space/Enter to activate it."
+     ],
+     "expected": "Each toggle is reachable and operable via keyboard.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-SEC-012",
+     "title": "An agent without Manual Operations permission cannot toggle MFA methods",
+     "steps": [
+      "Log in as an agent role without Manual Operations permission and open the Security tab."
+     ],
+     "expected": "Toggles and \"Deactivate all\" are disabled or hidden for this role.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-SEC-013",
+     "title": "Authenticator app label uses sentence case",
+     "steps": [
+      "Read the second MFA row."
+     ],
+     "expected": "Label reads \"Authenticator app\" (Figma), not \"Authenticator App\".",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-SEC-014",
+     "title": "An active method shows a purple (on) switch, inactive ones grey",
+     "steps": [
+      "Look at the switches for a user with only Email active."
+     ],
+     "expected": "Email switch on (purple); Authenticator app and SMS off (grey) (Figma 1519:118828).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "9",
+   "name": "Manual operation — Deactivate one MFA method",
+   "figma": "1667:156317 (Security - Activated → Details → Review details)",
+   "pre": "Agent has switched off an active MFA method on the Security tab (Details step).",
+   "cases": [
+    {
+     "id": "USR-DMFA-001",
+     "title": "Toggling off an active MFA method opens the Details step",
+     "steps": [
+      "Click the toggle for an active MFA method (e.g. Authenticator app)."
+     ],
+     "expected": "Full-page flow opens: breadcrumb \"@<username> / Deactivate email 2FA\", 2-step stepper Details → Review details (Figma 1667:161127).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Admin is on Account details > Security (MFA) tab."
+    },
+    {
+     "id": "USR-DMFA-002",
+     "title": "The Details step requires a reason (textarea) for deactivating the method",
+     "steps": [
+      "Leave the reason field empty and attempt to proceed."
+     ],
+     "expected": "Details shows \"Reason for deactivation\" (placeholder \"Why are you doing this...\") and the info box \"Please note before you deactivate this verification!\"; \"Review details\" stays disabled until a reason is entered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DMFA-003",
+     "title": "Cancel discards the deactivation and leaves the toggle in its prior state",
+     "steps": [
+      "Enter a reason, then click \"Cancel\"."
+     ],
+     "expected": "Panel closes; the method's toggle remains in its original (on) state.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DMFA-004",
+     "title": "The Review details step names the specific MFA method being deactivated",
+     "steps": [
+      "Complete the Details step and proceed to Review."
+     ],
+     "expected": "Review shows Action \"Deactivate email 2FA\" (method-specific), Client @username, Date, Reason with eye toggle; button \"Deactivate 2FA\" (red) (Figma 1667:161160).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow.",
+     "change": "updated"
+    },
+    {
+     "id": "USR-DMFA-005",
+     "title": "Back from the Review step preserves the entered reason",
+     "steps": [
+      "From the Review step, click \"Back\"."
+     ],
+     "expected": "Admin returns to the Details step with the previously entered reason still populated.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-DMFA-006",
+     "title": "No admin OTP step: Review details is the last step",
+     "steps": [
+      "Reach the final confirmation action of the deactivation flow."
+     ],
+     "expected": "Figma shows Details → Review details only; \"Deactivate 2FA\" applies the change. Flag if the build adds an OTP step.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DMFA-007",
+     "title": "An invalid or expired OTP blocks the deactivation",
+     "steps": [
+      "Enter an invalid or expired OTP code at the verification prompt and submit."
+     ],
+     "expected": "Not applicable to the designed flow (no OTP step).",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DMFA-008",
+     "title": "Cancelling the OTP prompt leaves the MFA method active",
+     "steps": [
+      "Reach the OTP prompt, then cancel/close it without entering a code."
+     ],
+     "expected": "Not applicable to the designed flow (no OTP step).",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DMFA-009",
+     "title": "A successful deactivation switches the toggle off and logs the change",
+     "steps": [
+      "Complete and confirm the deactivation, including OTP verification."
+     ],
+     "expected": "The method switch turns off once the flow completes; the action is in the audit trail if one exists.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DMFA-010",
+     "title": "Re-activating a previously deactivated method (if supported) requires the same confirmation flow",
+     "steps": [
+      "Toggle a currently-inactive MFA method back on."
+     ],
+     "expected": "Re-activation follows a comparable confirmation flow (reason, review, OTP) rather than toggling instantly, unless confirmed otherwise as a lighter-weight action.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin is on Account details > Security (MFA) tab.",
+     "note": "v1 note: Re-activation flow was not shown in the delivered screens — confirm whether it mirrors deactivation or is a simpler one-step toggle."
+    },
+    {
+     "id": "USR-DMFA-011",
+     "title": "Deactivating one MFA method does not affect the other two",
+     "steps": [
+      "Deactivate Authenticator app and observe Email and SMS."
+     ],
+     "expected": "Email and SMS toggles remain unchanged.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "pre": "Admin is on Account details > Security (MFA) tab."
+    },
+    {
+     "id": "USR-DMFA-012",
+     "title": "The deactivation is reflected in the account's overall Security state without needing a page refresh",
+     "steps": [
+      "Complete a deactivation and observe the tab without reloading."
+     ],
+     "expected": "Toggle state updates immediately.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin is on Account details > Security (MFA) tab."
+    },
+    {
+     "id": "USR-DMFA-013",
+     "title": "Details info box explains what happens after deactivating",
+     "steps": [
+      "Open the flow for Email.",
+      "Read the info box."
+     ],
+     "expected": "\"Please note before you deactivate this verification! User can log in without using email 2FA. If they want, they can set it up again however they like, but doing so will erase the old settings.\"",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DMFA-014",
+     "title": "Flow name follows the method (Email / Authenticator app / SMS)",
+     "steps": [
+      "Start the flow from each active method in turn."
+     ],
+     "expected": "Breadcrumb and Review Action name the chosen method (e.g. \"Deactivate email 2FA\", \"Deactivate SMS 2FA\").",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "10",
+   "name": "Manual operation — Deactivate all MFA",
+   "figma": "only the \"Deactivate all\" button is designed (1519:114500); no flow frames",
+   "pre": "Agent is on Account details > Security and has clicked \"Deactivate all\".",
+   "cases": [
+    {
+     "id": "USR-DAMFA-001",
+     "title": "Clicking \"Deactivate all\" opens a confirmation flow rather than acting instantly",
+     "steps": [
+      "Click \"Deactivate all\" on the Security tab."
+     ],
+     "expected": "A confirmation flow opens (reason and/or review step) rather than immediately switching off all toggles.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Admin is on Account details > Security (MFA) tab.",
+     "note": "No Figma flow for \"Deactivate all\": expected is inferred from the single-method flow."
+    },
+    {
+     "id": "USR-DAMFA-002",
+     "title": "The flow requires a reason before proceeding",
+     "steps": [
+      "Leave the reason field empty and attempt to proceed."
+     ],
+     "expected": "Continue/Review action remains disabled until a reason is entered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "note": "No Figma flow for \"Deactivate all\": expected is inferred from the single-method flow."
+    },
+    {
+     "id": "USR-DAMFA-003",
+     "title": "The Review step lists all currently-active methods that will be deactivated",
+     "steps": [
+      "Proceed to the Review step."
+     ],
+     "expected": "Review clearly lists every method currently active (e.g. Email, Authenticator app, SMS) that will be turned off, plus the entered reason.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DAMFA-004",
+     "title": "Cancel at any step leaves all MFA methods in their prior state",
+     "steps": [
+      "Cancel the flow at the Details or Review step."
+     ],
+     "expected": "No toggles change state.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "note": "No Figma flow for \"Deactivate all\": expected is inferred from the single-method flow."
+    },
+    {
+     "id": "USR-DAMFA-005",
+     "title": "No admin OTP step (same pattern as single-method flow)",
+     "steps": [
+      "Reach the final confirmation action."
+     ],
+     "expected": "Expected to follow Details → Review details like the single-method flow; flag if the build differs.",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DAMFA-006",
+     "title": "A successful \"Deactivate all\" switches every method's toggle off",
+     "steps": [
+      "Complete and confirm \"Deactivate all\", including OTP verification."
+     ],
+     "expected": "Email, Authenticator app, and SMS toggles all switch to the off state.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DAMFA-007",
+     "title": "\"Deactivate all\" when no methods are currently active is handled gracefully",
+     "steps": [
+      "Click \"Deactivate all\" for a user who already has zero active MFA methods."
+     ],
+     "expected": "Button is disabled, or the flow informs the admin there is nothing to deactivate, rather than proceeding into a confusing empty review.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin is on Account details > Security (MFA) tab."
+    },
+    {
+     "id": "USR-DAMFA-008",
+     "title": "The action is logged with operator ID, timestamp, and reason for each method individually",
+     "steps": [
+      "Complete a \"Deactivate all\" action and check the audit trail, if accessible."
+     ],
+     "expected": "Each of the affected methods is logged as an individual deactivation event, not a single opaque bulk entry, consistent with per-method traceability.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "11",
+   "name": "Manual operation — Update email address",
+   "figma": "1525:119258 (Contact Informations → Confirmation code → Review details)",
+   "pre": "Agent has chosen Edit details > Email address on Account details (Contact Informations step).",
+   "cases": [
+    {
+     "id": "USR-EML-001",
+     "title": "Edit details > Email address opens the Update email flow",
+     "steps": [
+      "Click \"Edit details\".",
+      "Choose \"Email address\"."
+     ],
+     "expected": "Full-page flow opens on \"Contact Informations\" with a 3-step stepper: Contact Informations, Confirmation code, Review details.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-EML-002",
+     "title": "The Contact Informations step contains an email input and a reason textarea",
+     "steps": [
+      "Observe the fields on the Contact Informations step."
+     ],
+     "expected": "An input for the new email address and a textarea for the reason for the change are both present.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-003",
+     "title": "The new email field validates standard email format",
+     "steps": [
+      "Enter an invalid email format (e.g. missing @ or domain)."
+     ],
+     "expected": "Field shows a validation error and blocks proceeding until a valid email format is entered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-EML-004",
+     "title": "Entering the account's current email address is handled",
+     "steps": [
+      "Enter the exact same email address the account already has."
+     ],
+     "expected": "System blocks the no-op change with a clear message, or allows it with a neutral explanation — confirm intended behaviour.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-005",
+     "title": "Reason is a required field",
+     "steps": [
+      "Leave Reason empty with a valid new email entered."
+     ],
+     "expected": "Continue action remains disabled until a reason is provided.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-EML-006",
+     "title": "Cancel discards the change and returns to Account details",
+     "steps": [
+      "Enter data into the Contact Informations step, then click \"Cancel\"."
+     ],
+     "expected": "Panel closes without changing the account's email; Personal Infos panel is unchanged.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-007",
+     "title": "Proceeding from Contact Informations advances to a Confirmation code step, before Review",
+     "steps": [
+      "Enter a valid new email and reason, then proceed."
+     ],
+     "expected": "Wizard advances to a \"Confirmation code\" step, ahead of the Review Details step.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "note": "v1 note: Note (not a defect): this flow's step order is Contact Informations → Confirmation code → Review Details — code verification happens before the final review, unlike the Details/Reason → Review → OTP order used for deactivation-style flows elsewhere in this module. Both patterns coexist in the app; test accordingly per flow rather than assuming a single universal order."
+    },
+    {
+     "id": "USR-EML-008",
+     "title": "The Confirmation code step is a customer-verification code, not the admin's own TOTP",
+     "steps": [
+      "Read the copy on the Confirmation code step."
+     ],
+     "expected": "Text reads to the effect of \"A 6-digit code was sent to [email/phone]. Enter it to finish updating.\" — this code is sent to the customer's new email or phone, not to the admin. Do not treat this as the admin's own authenticator/TOTP code, which is a different concept used elsewhere in the admin panel.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "note": "v1 note: Important distinction confirmed in the audited spec: unlike the admin-TOTP pattern used in Savings Box, Bond Investment, and this module's own Deactivate-style flows, this step verifies the code with the *customer*, not the admin. Make sure automated tests and manual scripts don't conflate the two."
+    },
+    {
+     "id": "USR-EML-009",
+     "title": "The info callout instructs the agent to get the code from the customer",
+     "steps": [
+      "Read the info callout on the Confirmation code step."
+     ],
+     "expected": "Callout reads to the effect of \"Grab the code from the user!\" / \"Ask the client to check emails and spam for the code.\", making clear the agent must contact the customer (by phone/chat) to retrieve the code before entering it.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-010",
+     "title": "The expiry countdown reads \"OTP code will expire in 2:00\" and counts down live",
+     "steps": [
+      "Observe the countdown timer on the Confirmation code step."
+     ],
+     "expected": "Timer starts at 2:00 and counts down in real time.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-011",
+     "title": "A \"Resend code\" option is available",
+     "steps": [
+      "Observe the Confirmation code step for a resend control."
+     ],
+     "expected": "A \"Resend code\" option is present, allowing the agent to trigger a new code to the customer if the current one expires or wasn't received.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-EML-012",
+     "title": "Resending sends a new code to the same destination and restarts the countdown",
+     "steps": [
+      "Click \"Resend code\"."
+     ],
+     "expected": "A new 6-digit code is sent to the same email address; the expiry countdown restarts from 2:00.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-EML-013",
+     "title": "An invalid or expired code blocks progressing to Review",
+     "steps": [
+      "Enter an incorrect or expired code and submit."
+     ],
+     "expected": "System rejects the code with a clear error and the admin remains on the Confirmation code step, able to retry or resend.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-EML-014",
+     "title": "A valid code advances to the Review Details step showing the new email and reason",
+     "steps": [
+      "Enter the valid code the customer provided."
+     ],
+     "expected": "Wizard advances to Review Details, showing the new email address and the entered reason for final confirmation.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-EML-015",
+     "title": "A final \"Confirm\" action on the Review step is required to actually apply the change",
+     "steps": [
+      "Reach the Review Details step and observe the available actions."
+     ],
+     "expected": "A distinct confirm action is required; simply completing OTP earlier does not itself apply the change.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-EML-016",
+     "title": "A successful email update reflects immediately in the Personal Infos panel",
+     "steps": [
+      "Complete the full Update Email flow for a valid new address."
+     ],
+     "expected": "Personal Infos panel's Email field shows the new address; the confirmation badge state (confirmed/pending) reflects whatever the actual verification status is post-change.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-EML-017",
+     "title": "The account's confirmation email/verification status after an email change is accurately represented",
+     "steps": [
+      "After changing the email, observe the confirmation badge next to Email."
+     ],
+     "expected": "Badge accurately reflects whether the new email is already confirmed or pending confirmation, rather than incorrectly showing the old confirmed state.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-018",
+     "title": "The completed change is logged with operator ID, timestamp, old value, new value, and reason",
+     "steps": [
+      "Check the audit trail after a successful email update, if accessible."
+     ],
+     "expected": "Log entry captures the agent who made the change, when, the previous and new email addresses, and the reason given.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-EML-019",
+     "title": "Edit details menu closes without starting a flow when dismissed",
+     "steps": [
+      "Click \"Edit details\".",
+      "Press Escape."
+     ],
+     "expected": "Menu closes; no flow starts.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "12",
+   "name": "Manual operation — Update phone number",
+   "figma": "1536:125635 (Contact Informations → Confirmation code → Review details)",
+   "pre": "Agent has chosen Edit details > Phone number on Account details (Contact Informations step).",
+   "cases": [
+    {
+     "id": "USR-PHN-001",
+     "title": "Edit details > Phone number opens the Update phone flow",
+     "steps": [
+      "Click \"Edit details\".",
+      "Choose \"Phone number\"."
+     ],
+     "expected": "Full-page flow opens on \"Contact Informations\" with a 3-step stepper: Contact Informations, Confirmation code, Review details.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-PHN-002",
+     "title": "The Phone number field enforces a valid international format",
+     "steps": [
+      "Enter an incomplete or invalid phone number."
+     ],
+     "expected": "Field shows a validation error and blocks proceeding until a valid, correctly-formatted number is entered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PHN-003",
+     "title": "A \"Receiver Card\" preview appears once a valid new number is entered",
+     "steps": [
+      "Enter a valid new phone number."
+     ],
+     "expected": "A receiver/preview card appears confirming the number entered (e.g. showing carrier or formatted display), before proceeding.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PHN-004",
+     "title": "Entering the account's current phone number is handled",
+     "steps": [
+      "Enter the exact same phone number the account already has."
+     ],
+     "expected": "System blocks the no-op change with a clear message, or allows it with a neutral explanation — confirm intended behaviour.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-PHN-005",
+     "title": "Reason is a required field",
+     "steps": [
+      "Leave Reason empty with a valid new phone number entered."
+     ],
+     "expected": "Continue action remains disabled until a reason is provided.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PHN-006",
+     "title": "Cancel discards the change and returns to Account details",
+     "steps": [
+      "Enter data into the Contact Informations step, then click \"Cancel\"."
+     ],
+     "expected": "Panel closes without changing the account's phone number; Personal Infos panel is unchanged.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PHN-007",
+     "title": "Proceeding advances to a Confirmation code step, sent to the new number, ahead of Review",
+     "steps": [
+      "Enter a valid new phone number and reason, then proceed."
+     ],
+     "expected": "Wizard advances to a Confirmation code step, with the copy \"A 6-digit code was sent to [phone]. Enter it to finish updating.\", an expiry countdown, and a receiver card confirming which number the code was sent to.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "note": "v1 note: Same customer-verification pattern as Update Email (not the admin's own TOTP): the code is sent to the customer's new phone number, and the agent must contact the customer to retrieve it before entering it here."
+    },
+    {
+     "id": "USR-PHN-008",
+     "title": "The info callout instructs the agent to get the code from the customer",
+     "steps": [
+      "Read the info callout on the Confirmation code step."
+     ],
+     "expected": "Callout reads to the effect of \"Grab the code from the user!\" / \"Ask the client to check emails and spam for the code.\"",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PHN-009",
+     "title": "The expiry countdown reads \"OTP code will expire in 2:00\" and counts down live",
+     "steps": [
+      "Observe the countdown timer on the Confirmation code step."
+     ],
+     "expected": "Timer starts at 2:00 and counts down in real time.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-PHN-010",
+     "title": "A \"Resend code\" option is available and sends a new code to the same number",
+     "steps": [
+      "Click \"Resend code\"."
+     ],
+     "expected": "A new 6-digit code is sent to the same phone number; the expiry countdown restarts from 2:00.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-PHN-011",
+     "title": "An invalid or expired code blocks progressing to Review",
+     "steps": [
+      "Enter an incorrect or expired code and submit."
+     ],
+     "expected": "System rejects the code with a clear error; admin remains on the Confirmation code step, able to retry or resend.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-PHN-012",
+     "title": "A valid code advances to Review Details showing the new phone number and reason",
+     "steps": [
+      "Enter the valid code the customer provided."
+     ],
+     "expected": "Wizard advances to Review Details, showing the new phone number and the entered reason.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-PHN-013",
+     "title": "A successful phone update reflects immediately in the Personal Infos panel",
+     "steps": [
+      "Complete the full Update Phone flow for a valid new number."
+     ],
+     "expected": "Personal Infos panel's Phone number field shows the new number, with its confirmation badge accurately reflecting the post-change verification status.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-PHN-014",
+     "title": "The completed change is logged with operator ID, timestamp, old value, new value, and reason",
+     "steps": [
+      "Check the audit trail after a successful phone update, if accessible."
+     ],
+     "expected": "Log entry captures the agent, timestamp, previous and new phone numbers, and the reason given.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-PHN-015",
+     "title": "Receiver card on the Confirmation code step shows the number the code was sent to",
+     "steps": [
+      "Reach the Confirmation code step."
+     ],
+     "expected": "A receiver card shows the formatted new number.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "13",
+   "name": "Manual operation — Deactivate account",
+   "figma": "1549:45826 (Details → Review details → Deactivated)",
+   "pre": "Agent has chosen \"...\" > Deactivate account on a Confirmed account (Details step).",
+   "cases": [
+    {
+     "id": "USR-DEACT-001",
+     "title": "The \"...\" more-options menu on Account details offers a Deactivate account action",
+     "steps": [
+      "Click \"...\" and observe the menu items."
+     ],
+     "expected": "\"...\" menu contains \"Deactivate account\" (Figma 1549:49711).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "v1 open question answered by Figma."
+    },
+    {
+     "id": "USR-DEACT-002",
+     "title": "Deactivate opens the Details step with \"Reason for deactivation\" and a warning",
+     "steps": [
+      "Select \"Deactivate account\" from the menu."
+     ],
+     "expected": "Breadcrumb \"@<username> / Deactivate account\"; stepper Details → Review details; textarea \"Reason for deactivation\" (placeholder \"Why are you doing this...\"); orange box \"Please note before you deactivate this account!\" explaining that login and transactions stop immediately and data stays intact (Figma 1549:45888).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "updated"
+    },
+    {
+     "id": "USR-DEACT-003",
+     "title": "\"Review details\" remains disabled until a reason is entered",
+     "steps": [
+      "Observe the \"Review details\" action with the reason field empty, then fill it."
+     ],
+     "expected": "Button is disabled while empty and enables once a reason is entered.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DEACT-004",
+     "title": "Cancel discards the deactivation and leaves the account Active",
+     "steps": [
+      "Enter a reason, then click \"Cancel\"."
+     ],
+     "expected": "Panel closes without changing the account's status; it remains on the Active tab (\"Confirmed\" badge on Account details).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DEACT-005",
+     "title": "The Review details step shows Action, Client, Date, and Reason",
+     "steps": [
+      "Complete the Details step and proceed to Review."
+     ],
+     "expected": "Review lists Action \"Deactivate account\", Client @username, Date, Reason (truncated, eye toggle) (Figma 1549:45976).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-DEACT-006",
+     "title": "The info callout on the Review step is relevant to confirming a deactivation, not a TOTP/MFA reset",
+     "steps": [
+      "Read the info callout shown below the summary table on the Review details step."
+     ],
+     "expected": "The info box on Review must be about confirming the deactivation. Design feedback: Figma shows \"Make sure you confirm the details below — Just reach out to one of your admins to reset your TOTP setup, and then you can update it.\" on every Review step of this module.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow.",
+     "change": "updated",
+     "note": "v1 note: Confirmed defect (per the audited spec, not the general reused-copy convention used elsewhere): this callout currently shows mismatched placeholder copy about resetting TOTP/MFA, which looks like a leftover from a different flow. Unlike the equivalent callouts in Savings Box/Bond Investment/Update Email/Phone (which are accurate references to an admin's own TOTP setup), this one has been confirmed as wrong and needs correcting by design before build."
+    },
+    {
+     "id": "USR-DEACT-007",
+     "title": "Back from the Review step preserves the entered reason",
+     "steps": [
+      "From the Review step, click \"Back\"."
+     ],
+     "expected": "Admin returns to the Details step with the previously entered reason still populated.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-DEACT-008",
+     "title": "The final action reads \"Deactivate account\" and is styled as destructive",
+     "steps": [
+      "Observe the primary button on the Review details step."
+     ],
+     "expected": "Primary button reads \"Deactivate account\" and is red; a \"Back\" button sits next to it.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-DEACT-009",
+     "title": "No admin OTP step: Review details is the last step",
+     "steps": [
+      "Click \"Deactivate account\" on the Review step and observe what happens next."
+     ],
+     "expected": "Figma shows Details → Review details only. Flag if the build adds an OTP step.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "change": "updated",
+     "note": "v1 open question answered by Figma (2 steps). v1 note: Open question: the audited spec describes Deactivate as a genuine two-step wizard (Details → Review) with no OTP frame mentioned, unlike Update Email/Phone (which explicitly includes a Confirmation/OTP step) and the general admin-TOTP pattern used in other modules (Savings Box, Bond Investment). This may be an intentional exception — reason capture plus a destructive-styled button may be considered sufficient friction for this action — or a step simply not captured in the static export. Confirm against a live build before asserting either way."
+    },
+    {
+     "id": "USR-DEACT-010",
+     "title": "A successful deactivation moves the account to the Deactivated tab",
+     "steps": [
+      "Complete and confirm the deactivation."
+     ],
+     "expected": "Account no longer appears under the Active tab and now appears under the Deactivated tab on the Accounts list.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-DEACT-011",
+     "title": "Deactivated account shows the orange banner with \"See details\" and a Deactivated badge",
+     "steps": [
+      "Open Account details for the newly-deactivated account."
+     ],
+     "expected": "Banner \"This account has been deactivated!\" with a \"See details\" button; profile badge \"Deactivated\"; no Edit details / Change user type / \"...\" buttons (Figma 1577:97491).",
+     "priority": "High",
+     "automate": true,
+     "smoke": true,
+     "pre": "Admin is viewing Account details for a Deactivated account.",
+     "change": "updated",
+     "note": "v1 note: The exact copy captured from the design (\"go th[rough]...\") reads as truncated/unfinished placeholder text — worth a light copy pass, though not a functional defect."
+    },
+    {
+     "id": "USR-DEACT-012",
+     "title": "Edit details and Change user type actions are hidden or disabled for a Deactivated account",
+     "steps": [
+      "Observe the Actions row in the profile panel."
+     ],
+     "expected": "Both buttons are hidden/disabled, consistent with the account being deactivated.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "pre": "Admin is viewing Account details for a Deactivated account."
+    },
+    {
+     "id": "USR-DEACT-013",
+     "title": "The completed deactivation is logged with operator ID, timestamp, and reason",
+     "steps": [
+      "Check the audit trail after a successful deactivation, if accessible."
+     ],
+     "expected": "Log entry captures the agent, timestamp, and the reason given for deactivation.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-DEACT-014",
+     "title": "A Deactivated account can still be located and opened via Search on the Deactivated tab",
+     "steps": [
+      "Search for the newly-deactivated account's username on the Deactivated tab."
+     ],
+     "expected": "Account is found and its details open normally in the deactivated (read-restricted) state.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-DEACT-015",
+     "title": "Cancel on the Details step returns to Account details unchanged",
+     "steps": [
+      "Open the Deactivate flow.",
+      "Click Cancel."
+     ],
+     "expected": "Agent is back on Account details; badge still \"Confirmed\".",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "note": "Non-destructive companion to USR-DEACT-004."
+    },
+    {
+     "id": "USR-DEACT-016",
+     "title": "Close (X) and \"Do you need help?\" are in the flow header",
+     "steps": [
+      "Open the Deactivate flow."
+     ],
+     "expected": "Header shows \"Do you need help?\" and an X that leaves the flow without changes.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "14",
+   "name": "Manual operation — Activate (reactivate) account",
+   "figma": "1667:129603 and 1691:161782 (Deactivated → See details → Details → Review details → Activated)",
+   "pre": "Agent is on Account details of a Deactivated account.",
+   "cases": [
+    {
+     "id": "USR-ACT-001",
+     "title": "\"See details\" on the deactivated banner opens a Details side panel with \"Activate account\"",
+     "steps": [
+      "Open Account details for a Deactivated account and locate the deactivated alert."
+     ],
+     "expected": "Side panel \"Details\" shows Action \"Deactivate account\", Client, Updated at, Updated by (agent @username), Reason (eye toggle), an info box \"If you've fixed the issue that caused your account to be deactivated, just hit the \"Activate Account\" button…\", and a purple \"Activate account\" button (Figma 1667:136591).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "updated",
+     "note": "v1 assumed an inline link in the alert; Figma now has a side panel + 2-step flow."
+    },
+    {
+     "id": "USR-ACT-002",
+     "title": "\"Activate account\" starts a 2-step flow (Details → Review details)",
+     "steps": [
+      "Click \"Activate this account\"."
+     ],
+     "expected": "Full-page flow: breadcrumb \"@<username> / Activate account\", stepper Details → Review details, a reason textarea (Figma 1667:140152). Design feedback: the label reads \"Reason for deactivation\" on the activate flow.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "updated",
+     "note": "v1 note: Open question: confirm with design/product whether this asymmetry with Deactivate (which requires a reason and a Review step) is intentional — a lightweight reversal of what was itself a lightweight suspension — or a gap that should be brought up to the same audit standard before build."
+    },
+    {
+     "id": "USR-ACT-003",
+     "title": "Review shows Action \"Activate account\" and the button \"Activate account\"",
+     "steps": [
+      "Click \"Activate this account\" and observe what, if anything, appears before the status changes."
+     ],
+     "expected": "Review lists Action \"Activate account\", Client, Date, Reason; purple \"Activate account\" + \"Back\" (Figma 1667:140185). No OTP step.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "updated",
+     "note": "v1 note: Not shown in the audited frames — no confirmation step was captured for this action. Verify against a live build rather than assuming either way."
+    },
+    {
+     "id": "USR-ACT-004",
+     "title": "A successful activation moves the account back to the Active tab",
+     "steps": [
+      "Complete the Activate action."
+     ],
+     "expected": "Account moves from the Deactivated tab back to the first (Active/Confirmed) tab; profile badge reads \"Confirmed\" (Figma 1691:161839).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-ACT-005",
+     "title": "The deactivated-account alert disappears once the account is reactivated",
+     "steps": [
+      "Open Account details for the newly-reactivated account."
+     ],
+     "expected": "No deactivated alert is shown; product cards and profile panel render in their normal (non-restricted) state.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "USR-ACT-006",
+     "title": "Edit details and Change user type actions reappear for a reactivated account",
+     "steps": [
+      "Observe the Actions row in the profile panel after reactivation."
+     ],
+     "expected": "Edit details, Change user type (still disabled for CS) and \"...\" are shown again.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-ACT-007",
+     "title": "A reactivated account's payment methods and MFA settings are unaffected by the deactivate/reactivate cycle",
+     "steps": [
+      "Compare Payment methods and Security tab state before deactivation and after reactivation."
+     ],
+     "expected": "Payment methods and MFA toggle states are preserved exactly as they were before deactivation.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-ACT-008",
+     "title": "The completed activation is logged with operator ID and timestamp",
+     "steps": [
+      "Check the audit trail after a successful reactivation, if accessible."
+     ],
+     "expected": "Log entry captures the agent and timestamp of the reactivation.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-ACT-009",
+     "title": "Details side panel closes with its X",
+     "steps": [
+      "Open \"See details\" on the deactivated banner.",
+      "Click X."
+     ],
+     "expected": "Panel closes; account stays Deactivated.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ACT-010",
+     "title": "Activate flow reason label matches the action",
+     "steps": [
+      "Open the activate flow.",
+      "Read the textarea label."
+     ],
+     "expected": "Label is about activation (e.g. \"Reason for activation\"). Design feedback: Figma 1667:140169 reads \"Reason for deactivation\".",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ACT-011",
+     "title": "Activate flow breadcrumb and stepper are consistent",
+     "steps": [
+      "Open the activate flow."
+     ],
+     "expected": "Breadcrumb \"@<username> / Activate account\"; stepper \"Details → Review details\". Design feedback: the second Figma variant (1691:161996) shows breadcrumb \"Deactivate account\" and step \"User information\".",
+     "priority": "Usability",
+     "automate": false,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-ACT-012",
+     "title": "Activation requires a reason",
+     "steps": [
+      "Open the activate flow.",
+      "Leave the reason empty."
+     ],
+     "expected": "\"Review details\" stays disabled until a reason is entered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "15",
+   "name": "Manual operation — Freeze account",
+   "figma": "1611:46249 (Details → Review details → Frozen)",
+   "pre": "Agent has chosen \"...\" > Freeze account on a Confirmed account (Details step).",
+   "cases": [
+    {
+     "id": "USR-FRZ-001",
+     "title": "\"...\" > Freeze account opens the Freeze flow",
+     "steps": [
+      "Click \"...\" in the profile panel.",
+      "Choose \"Freeze account\"."
+     ],
+     "expected": "Full-page flow: breadcrumb \"@<username> / Freeze account\", stepper Details → Review details (Figma 1611:46250).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "new",
+     "pre": "Agent has opened Account details for a Confirmed (active) account with Wallet, Savings box, Goal savings and Bond investment positions; Products overview tab is shown."
+    },
+    {
+     "id": "USR-FRZ-002",
+     "title": "Details step has \"Reason of the operation\" and the freeze warning",
+     "steps": [
+      "Open the Freeze flow."
+     ],
+     "expected": "Textarea \"Reason of the operation\"; orange box \"Please note before you freeze this account!\" — freezing blocks transactions (deposits, withdrawals) but the customer can still log in and view their info; unfreeze via \"Unfreeze this account\" (Figma 1611:46267).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-FRZ-003",
+     "title": "Review details is disabled until a reason is entered",
+     "steps": [
+      "Open the Freeze flow with the reason empty.",
+      "Type a reason."
+     ],
+     "expected": "Button disabled while empty, enabled after typing.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-FRZ-004",
+     "title": "Cancel leaves the account Confirmed",
+     "steps": [
+      "Type a reason.",
+      "Click Cancel."
+     ],
+     "expected": "Back on Account details; status unchanged.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-FRZ-005",
+     "title": "Review shows Action \"Freeze account\", client, date and reason",
+     "steps": [
+      "Enter a reason.",
+      "Click Review details."
+     ],
+     "expected": "Review lists Action \"Freeze account\", Client @username, Date, Reason (eye toggle); red \"Freeze account\" + Back (Figma 1611:46283).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-FRZ-006",
+     "title": "Back from Review keeps the reason",
+     "steps": [
+      "On Review, click Back."
+     ],
+     "expected": "Details step shows the same reason.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-FRZ-007",
+     "title": "Confirming freezes the account",
+     "steps": [
+      "Confirm \"Freeze account\" on Review."
+     ],
+     "expected": "Account moves to the Frozen tab; badge \"Frozen\"; blue banner \"This account has been frozen!\" with \"See details\"; action buttons hidden (Figma 1611:46367).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "new",
+     "pre": "Disposable test account (PHX_UM_FREEZE_USERNAME) and PHX_ALLOW_ACCOUNT_OPS=true."
+    },
+    {
+     "id": "USR-FRZ-008",
+     "title": "Frozen account can still be found on the Frozen tab",
+     "steps": [
+      "Search the frozen username on the Frozen tab."
+     ],
+     "expected": "Account is listed and opens.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Account frozen by USR-FRZ-007."
+    },
+    {
+     "id": "USR-FRZ-009",
+     "title": "Frozen banner \"See details\" shows who froze it and why",
+     "steps": [
+      "Click \"See details\" on the frozen banner."
+     ],
+     "expected": "Side panel shows Action \"Freeze account\", Client, Updated at, Updated by, Reason.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Any account on the Frozen tab."
+    },
+    {
+     "id": "USR-FRZ-010",
+     "title": "Unfreeze is offered for a frozen account",
+     "steps": [
+      "Open a frozen account.",
+      "Look for \"Unfreeze this account\"."
+     ],
+     "expected": "An unfreeze action exists (the freeze warning refers to \"Unfreeze this account\"). Open question: no unfreeze frames exist in Figma yet.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Any account on the Frozen tab."
+    },
+    {
+     "id": "USR-FRZ-011",
+     "title": "Frozen customer cannot transact but can log in",
+     "steps": [
+      "Freeze a test account.",
+      "Try a deposit and a login from the customer app."
+     ],
+     "expected": "Transactions are refused; login and profile viewing still work.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-FRZ-012",
+     "title": "Freeze is recorded in the audit trail",
+     "steps": [
+      "Check the audit trail after freezing."
+     ],
+     "expected": "Entry with agent, timestamp and reason.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  },
+  {
+   "id": "16",
+   "name": "Manual operation — Delete account",
+   "figma": "1615:111474 (Account details → Reason for deletion → Review details → Deleted)",
+   "pre": "Agent has chosen \"...\" > Delete account on a Confirmed account (Account details step).",
+   "cases": [
+    {
+     "id": "USR-DEL-001",
+     "title": "\"...\" > Delete account opens the Delete flow (Delete in red)",
+     "steps": [
+      "Click \"...\" in the profile panel.",
+      "Choose \"Delete account\"."
+     ],
+     "expected": "Full-page flow: breadcrumb \"@<username> / Delete account\", stepper Account details → Reason for deletion → Review details (Figma 1615:111475).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true,
+     "change": "new",
+     "pre": "Agent has opened Account details for a Confirmed (active) account with Wallet, Savings box, Goal savings and Bond investment positions; Products overview tab is shown."
+    },
+    {
+     "id": "USR-DEL-002",
+     "title": "Account details step has 3 options with \"Send account snapshot\" on by default",
+     "steps": [
+      "Open the Delete flow."
+     ],
+     "expected": "Switches: \"Send account snapshot to user's email\" (on), \"Keep username\" (off), \"Free KYC identification\" (off).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-003",
+     "title": "Option descriptions explain each option",
+     "steps": [
+      "Read the text under each switch."
+     ],
+     "expected": "Each switch has its own description. Design feedback: all three read \"Add the agent username.\" in Figma.",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-004",
+     "title": "Red warning names the account being deleted",
+     "steps": [
+      "Read the red box on the Account details step."
+     ],
+     "expected": "\"Are you sure you want to delete @<username>?\" — permanent erasure of data and history, back up first, notify the customer if not fraud-related.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-005",
+     "title": "Reason for deletion lists the 7 designed reasons and \"Other reason?\"",
+     "steps": [
+      "Continue to \"Reason for deletion\"."
+     ],
+     "expected": "Radios: \"The user forgot their keys\", \"The user wants to leave the app\", \"The user wants a new account for personal reasons\", \"This is a test account\", \"Dissatisfied with customer service\", \"Confirmed fraud / compliance closure\", \"Regulatory/legal request (right to erasure)\"; plus textarea \"Other reason?\" (Figma 1615:111492).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-006",
+     "title": "Only one reason can be selected",
+     "steps": [
+      "Select two reasons one after the other."
+     ],
+     "expected": "Only the last one stays selected.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-007",
+     "title": "Review details is disabled until a reason is given",
+     "steps": [
+      "Leave all radios empty and the textarea blank.",
+      "Pick a reason."
+     ],
+     "expected": "Disabled first; enabled after a radio or text.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-008",
+     "title": "Cancel leaves the account untouched",
+     "steps": [
+      "Open the Delete flow.",
+      "Click Cancel."
+     ],
+     "expected": "Back on Account details; status unchanged.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-009",
+     "title": "Review shows every option and the reason",
+     "steps": [
+      "Choose options and a reason.",
+      "Click Review details."
+     ],
+     "expected": "Review lists Action \"Delete account\", Client, \"Email snapshot to user\" Yes/No, \"Keep username\" Yes/No, \"Free KYC\" Yes/No, Date, Reason; red \"Delete account\" + Back (Figma 1615:111508).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-010",
+     "title": "Back from Review keeps options and reason",
+     "steps": [
+      "On Review, click Back twice."
+     ],
+     "expected": "Reason and switch states are kept.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-011",
+     "title": "Confirming deletes the account",
+     "steps": [
+      "Confirm \"Delete account\"."
+     ],
+     "expected": "Account moves to the Deleted tab; badge \"Deleted\"; red banner \"This account has been deleted!\" (Figma 1615:111592).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Disposable account (PHX_UM_DELETE_USERNAME) and PHX_ALLOW_ACCOUNT_OPS=true."
+    },
+    {
+     "id": "USR-DEL-012",
+     "title": "\"Keep username\" off frees the username",
+     "steps": [
+      "Delete with \"Keep username\" off.",
+      "Look at the Deleted tab."
+     ],
+     "expected": "Username, email and phone get a deleted suffix so they can be reused (live build appends \"_<id>_deleted\").",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Account deleted by USR-DEL-011."
+    },
+    {
+     "id": "USR-DEL-013",
+     "title": "Account snapshot email is sent when the option is on",
+     "steps": [
+      "Delete with \"Send account snapshot\" on.",
+      "Check the customer inbox."
+     ],
+     "expected": "Customer receives the account snapshot email.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-DEL-014",
+     "title": "Deleted account offers no reactivation",
+     "steps": [
+      "Open a Deleted account."
+     ],
+     "expected": "No Activate / Unfreeze action; banner \"See details\" only shows the deletion details.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "change": "new",
+     "pre": "Any account on the Deleted tab."
+    }
+   ]
+  },
+  {
+   "id": "17",
+   "name": "Cross-cutting consistency and non-functional",
+   "figma": "all User Management frames",
+   "pre": "Agent is logged into the Admin Panel with a CS role.",
+   "cases": [
+    {
+     "id": "USR-XCT-001",
+     "title": "Consistent XAF currency formatting across all Account details product cards",
+     "steps": [
+      "Compare currency value formatting across Wallet, Savings box, Goal savings, and Bond investment cards."
+     ],
+     "expected": "All monetary values use consistent, correctly-grouped thousands separators and the \"XAF\" suffix throughout.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-XCT-002",
+     "title": "Consistent date/time formatting across all User Management screens",
+     "steps": [
+      "Compare date formatting across Accounts list, Account details, Payment methods, and Security tabs."
+     ],
+     "expected": "All dates use the same consistent format, e.g. \"July 02, 2024 - 12:00 AM\".",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-XCT-003",
+     "title": "The confirmation-badge styling (green check) for Email and Phone is used consistently across every tab that shows it",
+     "steps": [
+      "Compare the confirmation badges on Products overview, Payment methods, and Security tabs."
+     ],
+     "expected": "Same badge styling and behaviour on every tab, since the Personal Infos panel is shared.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": true
+    },
+    {
+     "id": "USR-XCT-004",
+     "title": "The two distinct confirmation-flow step orders in this module are each internally consistent",
+     "steps": [
+      "Compare the step order across Update Email/Phone (Contact info → OTP → Review) versus Deactivate MFA/Account/Payment method flows (Details/reason → Review → OTP)."
+     ],
+     "expected": "Update email/phone and Add payment method: Details/Contact info → Confirmation code (customer) → Review. Deactivate/Freeze/Activate/MFA/payment method: Details → Review. Delete: Account details → Reason for deletion → Review. No flow mixes the patterns.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "change": "updated"
+    },
+    {
+     "id": "USR-XCT-005",
+     "title": "An agent without Export permission does not see Export buttons anywhere in this module",
+     "steps": [
+      "Log in as an agent role without Export permission and browse Accounts list, Payment methods, and Security tabs."
+     ],
+     "expected": "Export buttons are hidden or disabled for this role throughout the module.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-XCT-006",
+     "title": "Left-nav \"User management\" item has no sub-menu, unlike other modules",
+     "steps": [
+      "Observe the left nav entry for User management."
+     ],
+     "expected": "\"User management\" is a single sidebar link (no sub-menu) and is highlighted on /users pages.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "USR-XCT-007",
+     "title": "Keyboard Tab order through each Manual Operations wizard is logical",
+     "steps": [
+      "Use Tab to move through the Update Email/Phone and deactivation flow fields."
+     ],
+     "expected": "Focus moves in a logical order through all interactive fields and buttons in each flow.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false,
+     "pre": "Admin has opened the Update Email address flow from Account details (Contact Informations step)."
+    },
+    {
+     "id": "USR-XCT-008",
+     "title": "Session/OTP expiry mid-Manual-Operation is handled gracefully across all flows in this module",
+     "steps": [
+      "Simulate a session or OTP expiry while on a Review or Confirmation step of any Manual operation in this module."
+     ],
+     "expected": "Admin is prompted to re-authenticate without silently losing entered data or applying a duplicate/partial change.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Agent is on the Confirmation code or Review details step of this flow."
+    },
+    {
+     "id": "USR-XCT-009",
+     "title": "User Management pages render correctly at common desktop resolutions",
+     "steps": [
+      "Load Accounts list and Account details at 1280px, 1440px, and 1920px widths."
+     ],
+     "expected": "Layout remains usable with no overlapping or clipped elements at any tested width, including the four-card Products overview grid.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-XCT-010",
+     "title": "All confirmed defects and open observations from Section 3 of this document are re-tested once addressed",
+     "steps": [
+      "After a fix or confirmation is provided for any item logged in the Design & Copy Observations section, re-run the corresponding TC ID(s)."
+     ],
+     "expected": "Each previously-flagged item passes (or its expected result is updated) once resolved.",
+     "priority": "Low",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "USR-XCT-011",
+     "title": "Review steps use a confirmation callout, not TOTP copy",
+     "steps": [
+      "Open the Review step of Deactivate, Freeze, Activate, Delete and Deactivate 2FA."
+     ],
+     "expected": "Callout explains what will happen. Design feedback: all Figma Review frames show \"Just reach out to one of your admins to reset your TOTP setup, and then you can update it.\"",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    },
+    {
+     "id": "USR-XCT-012",
+     "title": "Status badge words are consistent across list, badge and wallet card",
+     "steps": [
+      "Compare the list tab, profile badge and Wallet card status for each state."
+     ],
+     "expected": "One word per state everywhere. Design feedback: list tab \"Active\" vs badge \"Confirmed\"; Wallet card \"Froozen\" on the deleted frame.",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false,
+     "change": "new"
+    }
+   ]
+  }
+ ]
+}

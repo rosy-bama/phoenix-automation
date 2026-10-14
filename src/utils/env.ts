@@ -19,6 +19,9 @@ export const env = {
   walletUsername: process.env.PHX_WALLET_USERNAME ?? 'rosetestbox',
   savingsUsername: process.env.PHX_SAVINGS_USERNAME ?? 'priscatest5',
   allowMoneyOps: process.env.PHX_ALLOW_MONEY_OPS === 'true',
+  /** User Management: Confirmed account used for read-only checks. */
+  umUsername: process.env.PHX_UM_USERNAME ?? 'rosetestbox',
+  allowAccountOps: process.env.PHX_ALLOW_ACCOUNT_OPS === 'true',
 };
 
 if (env.targetEnv === 'production') {

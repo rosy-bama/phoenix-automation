@@ -22,6 +22,9 @@ export class FiatTransactionsPage extends BasePage {
   readonly heading: Locator;
   readonly description: Locator;
   readonly searchInput: Locator;
+  readonly reloadButton: Locator;
+  readonly exportButton: Locator;
+  readonly oops: Locator;
 
   static readonly columns = [
     'Username',
@@ -43,6 +46,22 @@ export class FiatTransactionsPage extends BasePage {
     this.description = page.getByText(/^The transaction list covers/);
     // CONFIRMED (snapshot): textbox "Search..."
     this.searchInput = page.getByRole('main').getByRole('textbox', { name: 'Search...' });
+    this.reloadButton = page.getByRole('main').getByRole('button', { name: 'reload' });
+    this.exportButton = page.getByRole('main').getByRole('button', { name: 'Export' });
+    // App-wide error page (seen 13 Oct 2026 when filtering by status Failed/Pending).
+    this.oops = page.getByRole('heading', { name: 'Oops!' });
+  }
+
+  static readonly productColumns = ['Username', 'Total amount', 'Source/Destination', 'Product', 'Status', 'Date'];
+
+  static columnsFor(tab: TxnTab) {
+    return tab === 'Sales' || tab === 'Purchases' ? FiatTransactionsPage.productColumns : FiatTransactionsPage.columns;
+  }
+
+  async search(term: string) {
+    await this.searchInput.fill(term);
+    await this.searchInput.press('Enter');
+    await this.table.settle();
   }
 
   async open() {
@@ -56,5 +75,6 @@ export class FiatTransactionsPage extends BasePage {
 
   async openTab(name: TxnTab) {
     await this.tab(name).click();
+    await this.table.settle();
   }
 }

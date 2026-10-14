@@ -18,6 +18,7 @@ export class FilterPanel {
   readonly maxAmount: Locator;
   readonly startDate: Locator;
   readonly endDate: Locator;
+  readonly subtitle: Locator;
 
   constructor(private readonly page: Page) {
     this.openButton = page.getByRole('button', { name: 'Filters' });
@@ -36,6 +37,50 @@ export class FilterPanel {
     // Fiat Wallet date pickers are named "Start"/"End" (snapshot 13 Oct 2026).
     this.startDate = this.root.getByRole('textbox', { name: /^Start( date)?$/ });
     this.endDate = this.root.getByRole('textbox', { name: /^End( date)?$/ });
+    this.subtitle = this.root.getByRole('paragraph').first();
+  }
+
+  /** A field label / section title inside the panel. */
+  label(text: string | RegExp) {
+    return this.root.getByText(text, { exact: typeof text === 'string' }).first();
+  }
+
+  /** Options of a select, read by opening and closing it. */
+  async options(label: string): Promise<string[]> {
+    await this.select(label).click();
+    let list: string[] = [];
+    // The dropdown animates in: poll until its options are readable.
+    await expect.poll(async () => (list = (await this.dropdownOptions().allTextContents()).map((o) => o.trim()).filter(Boolean)).length).toBeGreaterThan(0);
+    await this.page.keyboard.press('Escape');
+    return list;
+  }
+
+  /** Quick ranges ("Today", "Last 7 days", ...) of the open date picker. CONFIRMED 13 Oct 2026. */
+  quickRange(name: string) {
+    return this.page
+      .locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden) .ant-picker-presets li')
+      .filter({ hasText: new RegExp(`^${escapeRegex(name)}$`) });
+  }
+
+  /**
+   * Picks a start and an end date (both "YYYY-MM-DD", in the current month).
+   * Start and End are two separate Ant pickers (snapshot 13 Oct 2026): each
+   * opens its own calendar; we click the in-view cell with the day number.
+   */
+  async pickDateRange(start: string, end: string) {
+    const pick = async (input: Locator, d: string) => {
+      await input.click();
+      await this.page
+        // last(): the previous picker's dropdown can still be in the DOM while it fades out.
+        .locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)')
+        .last()
+        .locator('td.ant-picker-cell-in-view')
+        .filter({ hasText: new RegExp(`^${Number(d.slice(8))}$`) })
+        .first()
+        .click();
+    };
+    await pick(this.startDate, start);
+    await pick(this.endDate, end);
   }
 
   async open() {

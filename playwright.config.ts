@@ -14,7 +14,15 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   // One retry: testbox response times vary a lot. A test that passes only on
   // retry is reported as "flaky" in the summary - not hidden.
-  retries: 1,  reporter: [['html', { open: 'never' }], ['list']],
+  retries: 1,
+  // plan-report.ts: one test-session report per module (local markdown, and
+  // ClickUp "Test sessions > Automatic" after a complete run of that module).
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list'],
+    ['./src/reporting/plan-report.ts', { module: 'fiat-wallet' }],
+    ['./src/reporting/plan-report.ts', { module: 'user-management' }],
+  ],
 
   use: {
     baseURL: process.env.PHX_BASE_URL ?? 'https://phoenix-testbox.ejaraapis.xyz',

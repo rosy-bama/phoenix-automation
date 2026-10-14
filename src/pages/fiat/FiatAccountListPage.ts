@@ -26,6 +26,9 @@ export class FiatAccountListPage extends BasePage {
   readonly rewardsTab: Locator;
   readonly reloadButton: Locator;
   readonly searchInput: Locator;
+  readonly clearSearchButton: Locator;
+  readonly exportButton: Locator;
+  readonly breadcrumb: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -41,6 +44,13 @@ export class FiatAccountListPage extends BasePage {
     this.rewardsTab = page.getByRole('button', { name: 'Rewards' });
     this.reloadButton = page.getByRole('button', { name: 'reload' });
     this.searchInput = page.getByRole('textbox', { name: 'Search account...' });
+    this.clearSearchButton = page.getByRole('main').getByRole('button', { name: 'close-circle' });
+    this.exportButton = page.getByRole('main').getByRole('button', { name: 'Export' });
+    this.breadcrumb = page.getByRole('banner');
+  }
+
+  tabs() {
+    return [this.mainWalletTab, this.jaraWalletTab, this.rewardsTab];
   }
 
   async open() {

@@ -33,6 +33,11 @@ export class FiatAccountDetailsPage extends BasePage {
   readonly manualOpsButton: Locator;
   readonly exportButton: Locator;
   readonly reloadButton: Locator;
+  readonly viewProfileLink: Locator;
+  readonly breadcrumb: Locator;
+  readonly manualOpsOptions: Locator;
+  readonly cashInOption: Locator;
+  readonly cashOutOption: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -48,9 +53,52 @@ export class FiatAccountDetailsPage extends BasePage {
     this.transactionsSummary = page.getByText('Transactions summary', { exact: true });
     this.transactionTypeSelect = page.getByRole('main').locator('select')
       .filter({ has: page.locator('option[value="cash_in"]') });
-    this.manualOpsButton = page.getByRole('button', { name: 'Manual Operations', exact: true });
+    this.manualOpsButton = page.getByRole('button', { name: /^Manual operations$/i });
     this.exportButton = page.getByRole('button', { name: 'Export' });
     this.reloadButton = page.getByRole('button', { name: 'reload' });
+    this.viewProfileLink = page.getByRole('link', { name: /^View profile$/i });
+    this.breadcrumb = page.getByRole('banner');
+    // CONFIRMED (snapshot 13 Oct 2026): a listbox with "Manual Deposit" /
+    // "Manual Withdrawal". Figma names them "Cash in" / "Cash out".
+    this.manualOpsOptions = page.getByRole('listbox').getByRole('option');
+    this.cashInOption = this.manualOpsOptions.filter({ hasText: /^(Cash in|Manual Deposit)$/i });
+    this.cashOutOption = this.manualOpsOptions.filter({ hasText: /^(Cash out|Manual Withdrawal)$/i });
+  }
+
+  async startCashIn() {
+    await this.manualOpsButton.click();
+    await this.cashInOption.click();
+  }
+
+  async startCashOut() {
+    await this.manualOpsButton.click();
+    await this.cashOutOption.click();
+  }
+
+  /** The profile + metadata block, as one line of text. */
+  async headerText(): Promise<string> {
+    const text = await this.page.getByRole('main').innerText();
+    return text.split('Transactions summary')[0].replace(/\s+/g, ' ').trim();
+  }
+
+  /** Every transaction row of this account (walks all pages at 50 per page). */
+  async allTransactions(): Promise<Record<string, string>[]> {
+    await this.table.rows.first().or(this.table.table.getByText('No data', { exact: true }).first()).waitFor();
+    if (!(await this.table.rows.count())) return [];
+    if ((await this.pagination.counts()).total > (await this.table.rows.count())) await this.pagination.setPageSize(50);
+    const headers = (await this.table.table.getByRole('columnheader').allTextContents()).map((h) => h.trim());
+    const out: Record<string, string>[] = [];
+    for (;;) {
+      for (const row of await this.table.rows.all()) {
+        const cells = (await row.getByRole('cell').allTextContents()).map((c) => c.trim());
+        out.push(Object.fromEntries(headers.map((h, i) => [h, cells[i] ?? ''])));
+      }
+      const { to, total } = await this.pagination.counts();
+      if (to >= total || !(await this.pagination.nextButton.isEnabled())) break;
+      await this.pagination.nextButton.click();
+      await this.pagination.waitForFrom(to + 1);
+    }
+    return out;
   }
 
   field(label: string) {

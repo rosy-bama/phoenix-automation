@@ -27,6 +27,11 @@ npm run report                # open the HTML report
 | `npm run test:known-bugs` | Only `@known-bug` tests. Run after a fix build to see what got fixed. |
 | `npm run test:headed` | Same as `npm test`, with a visible browser |
 | `npm run codegen` | Codegen with your saved session (no need to log in again) |
+| `npm run test:fiat:report` | Full Fiat Wallet run + test-session report (local, and ClickUp when `CLICKUP_API_TOKEN` is set) |
+| `npm run plan:render` | Prints the Fiat Wallet test plan (v2) as ClickUp markdown |
+| `npm run test:users:report` | Full User Management run + test-session report (local, and ClickUp when `CLICKUP_API_TOKEN` is set) |
+| `npm run plan:render -- user-management` | Prints the User Management test plan (v2) as ClickUp markdown |
+| `npm run snapshot:users` | Read-only tour of /users to re-check selectors |
 
 ## Structure
 
@@ -43,6 +48,10 @@ src/
 tests/
   auth.setup.ts                       logs in once, saves .auth/state.json
   auth/  smoke/  fiat-wallet/  savings-box/
+src/test-plan/fiat-wallet.plan.json   Fiat Wallet test plan v2 (source of truth for TC IDs + expected results)
+src/test-plan/user-management.plan.json  User Management test plan v2 (USR-* IDs)
+tests/user-management/                User Management suite (account-changing cases gated by PHX_ALLOW_ACCOUNT_OPS)
+src/reporting/                        Fiat Wallet report + ClickUp publishing
 docs/fiat-wallet-coverage.md          what is automated, mapped to test plan sections
 ```
 
@@ -62,6 +71,8 @@ docs/fiat-wallet-coverage.md          what is automated, mapped to test plan sec
 
 ## Test IDs
 
-IDs such as `FW-2.05` follow *section.case* from the Fiat Wallet test plan.
-They are provisional and should be replaced with the real TC IDs from the
-plan. See `docs/fiat-wallet-coverage.md`.
+Fiat Wallet test titles start with the plan's TC ID (`TC-WALLIST-001 ...`); the
+expected result shown in the report comes from `src/test-plan/fiat-wallet.plan.json`.
+Use `observe()` to record what the app showed, `unmet()` when a test requirement
+is missing (Skipped) and `blocked()` when a bug or missing feature stops the steps
+(Blocked). See `docs/fiat-wallet-coverage.md`.

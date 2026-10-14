@@ -15,6 +15,9 @@ import { test } from '@playwright/test';
  *
  * `id` should be the Jira/ClickUp ticket once one exists. Until then use the
  * TC ID from the Fiat Wallet test plan.
+ *
+ * In the Fiat Wallet report a known bug that still fails counts as
+ * "Failed (known bug)", because the app still differs from the design.
  */
 export function knownBug(id: string, summary: string) {
   test.info().annotations.push({ type: 'known-bug', description: `${id} - ${summary}` });

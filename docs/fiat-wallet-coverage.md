@@ -1,27 +1,50 @@
 # Fiat Wallet - automation coverage
 
-Source: Fiat Wallet Test Summary Report (11 Aug 2026) and codegen recording (29 Sep 2026).
-The full 156-case test plan was not available when this suite was written. TC IDs are provisional.
+Source of truth: [`src/test-plan/fiat-wallet.plan.json`](../src/test-plan/fiat-wallet.plan.json),
+the v2 test plan (13 Oct 2026). It is v1 (156 cases, ClickUp "Test plans > Fiat wallet")
+checked against the [Figma Wallet page](https://www.figma.com/design/wupOXbtxsxrenOpL5AfM4u/Design?node-id=150-518),
+plus 63 new cases. It is published as the ClickUp sub-page "Fiat wallet — v2 (Figma)"
+(`npm run plan:render` prints the markdown).
 
-| Plan section | Automated | Known-bug tests | Notes |
+Every test title starts with its plan TC ID. `tc('<id>')` adds `@smoke` and the priority tag
+from the plan, and fails if the ID is not in the plan.
+
+| Plan section | Cases | Automated | Spec |
 |---|---|---|---|
-| 1. Wallet Account List | 10 | 0 | tabs, search, empty state, selection, page size, open details |
-| 2. Account List Filters | 9 | 4 | multi-select status, quick date ranges, Reset, Apply |
-| 3. Account Details | 9 | 0 | header fields, stat cards, freeze tooltip, tabs, export |
-| 4. Transaction Filters (account) | 5 | 0 | status/payment options, "Amount range" terminology |
-| 5. Transaction Details (account) | 6 | 0 | all 14 fields, Client match, Total = Amount + Fees (INFERRED) |
-| 6. Manual Ops - Cash In | 0 | - | needs a codegen recording of the Fiat cash-in flow |
-| 7. Manual Ops - Cash Out | 0 | - | needs a codegen recording of the Fiat cash-out flow |
-| 8. Transactions Module - List | 8 | 1 | tabs, columns, page size, pagination comma |
-| 9. Transactions Module - Filters | 4 | 0 | |
-| 10. Txn Details - Deposits/Withdrawals | 3 | 0 | |
-| 11. Txn Details - Sales/Purchases | 5 | 4 | missing Client, Product mapping |
+| 1. Wallet Account List | 23 | 23 | `01-account-list.spec.ts` |
+| 2. Account List Filters | 19 | 17 | `02-account-list-filters.spec.ts` |
+| 3. Account Details | 22 | 22 | `03-account-details.spec.ts` |
+| 4. Transaction Filters (account) | 12 | 12 | `04-account-transaction-filters.spec.ts` |
+| 5. Transaction Details (account) | 14 | 14 | `05-account-transaction-details.spec.ts` |
+| 6. Manual deposit (Cash in) | 27 | 27 | `06-manual-deposit.spec.ts` |
+| 7. Manual withdrawal (Cash out) | 29 | 27 | `07-manual-withdrawal.spec.ts` |
+| 8. Transactions module - list | 20 | 20 | `08-transactions-list.spec.ts` |
+| 9. Transactions module - filters | 15 | 14 | `09-transactions-filters.spec.ts` |
+| 10. Txn details - Deposits/Withdrawals | 14 | 12 | `10-11-transactions-details.spec.ts` |
+| 11. Txn details - Sales/Purchases | 9 | 9 | `10-11-transactions-details.spec.ts` |
+| 12. Complete transaction (new) | 11 | 11 | `12-complete-transaction.spec.ts` |
+| 13. Wallet issue resolution (new) | 4 | 2 | `13-wallet-issues.spec.ts` |
+| **Total** | **219** | **210** | |
 
-Also included: Auth (7 tests, 1 known bug: raw i18n key on reset password), Smoke navigation
-(12 tests, 1 known bug: KYC Requests error page), Savings Box manual deposit (4 tests, 1 of them `@money`).
+## Report
 
-## Staying manual (for now)
+`npm run test:fiat:report` runs the suite and `src/reporting/plan-report.ts` writes
+`reports/fiat-wallet/<date>.md` (and `.json`):
 
-- Visual and Figma-fidelity checks (spacing, colours, copy polish)
-- Invalid/expired OTP blocks the action. Testbox accepts any code.
-- Clipboard content after Copy (needs clipboard permissions; can be added later)
+- **Passed** - the app matches the expected (design) result.
+- **Failed** - it does not. Includes `knownBug()` tests that still fail ("Failed (known bug)").
+- **Skipped** - `unmet()`: a test requirement is missing (data, env flag, second role).
+- **Blocked** - `blocked()`: a blocking bug or missing implementation stops the steps.
+- **Pass rate** = Passed / (Passed + Failed + Blocked).
+- The plan with its Feedback column filled (outcome + actual result for each case).
+
+After a **complete** run (every automated case was part of it) the report is published as a
+new sub-page of ClickUp "Phoenix > Test sessions > Automatic" when `CLICKUP_API_TOKEN` is set.
+
+## Not automated
+
+- 9 manual cases (Automate = False in the plan): product decisions (filter state across tabs,
+  failed withdrawals, transfer filter), the full withdrawal that empties the shared account,
+  end-date-before-start-date, reason length display, zero-balance withdrawal.
+- Money-moving cases run only with `PHX_ALLOW_MONEY_OPS=true` (testbox).
+- Audit trail cases are Blocked: Phoenix has no audit-trail screen.

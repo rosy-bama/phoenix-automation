@@ -16,7 +16,13 @@
     "snapshot": "node scripts/snapshot.js",
     "codegen": "playwright codegen --load-storage=.auth/state.json https://phoenix-testbox.ejaraapis.xyz",
     "snapshot:fiat": "node scripts/snapshot-fiat.js",
-    "test:fiat:setup": "playwright test tests/fiat-wallet --grep-invert @known-bug"
+    "test:fiat:setup": "playwright test tests/fiat-wallet --grep-invert @known-bug",
+    "test:fiat:report": "playwright test tests/fiat-wallet",
+    "plan:render": "node --no-warnings scripts/render-plan.ts",
+    "test:users": "playwright test tests/user-management",
+    "test:users:report": "playwright test tests/user-management",
+    "snapshot:users": "node scripts/snapshot-users.js",
+    "report:publish": "node --no-warnings --env-file=.env scripts/publish-report.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

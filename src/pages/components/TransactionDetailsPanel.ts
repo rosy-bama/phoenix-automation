@@ -12,6 +12,8 @@ export class TransactionDetailsPanel {
   readonly heading: Locator;
   readonly root: Locator;
   readonly closeButton: Locator;
+  readonly completeButton: Locator;
+  readonly copyButtons: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Transaction details' });
@@ -21,6 +23,18 @@ export class TransactionDetailsPanel {
       .filter({ has: page.getByText('Transaction reference', { exact: true }) })
       .last();
     this.closeButton = this.root.getByRole('button', { name: '×' });
+    // INFERRED from Figma 484:19812 - footer button of a failed deposit.
+    this.completeButton = page.getByRole('button', { name: /complete transaction/i });
+    this.copyButtons = this.root.getByRole('button', { name: 'Copy' });
+  }
+
+  async has(name: string): Promise<boolean> {
+    return (await this.root.getByText(name, { exact: true }).count()) > 0;
+  }
+
+  /** Whole panel text, for observations. */
+  async text(): Promise<string> {
+    return ((await this.root.innerText()) ?? '').replace(/\s+/g, ' ').trim();
   }
 
   async expectOpen() {
