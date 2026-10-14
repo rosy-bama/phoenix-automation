@@ -1,0 +1,152 @@
+{
+  "note": "One entry per complete test session; written by plan-report.ts. Commit it so the defect trend is shared.",
+  "sessions": [
+    {
+      "session": "Test session - Fiat wallet - 13/10/2026",
+      "date": "2026-10-13T19:20:00.000Z",
+      "passRate": "51.0%",
+      "open": [
+        {
+          "id": "FW-DEF-01",
+          "severity": "Critical"
+        },
+        {
+          "id": "FW-DEF-02",
+          "severity": "Critical"
+        },
+        {
+          "id": "FW-DEF-03",
+          "severity": "Critical"
+        },
+        {
+          "id": "FW-DEF-04",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-05",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-06",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-07",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-08",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-09",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-10",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-11",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-12",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-13",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-14",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-15",
+          "severity": "High"
+        },
+        {
+          "id": "FW-DEF-16",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-17",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-18",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-19",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-20",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-21",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-22",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-23",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-24",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-25",
+          "severity": "Medium"
+        },
+        {
+          "id": "FW-DEF-26",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-27",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-28",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-29",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-30",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-31",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-32",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-33",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-34",
+          "severity": "Low"
+        },
+        {
+          "id": "FW-DEF-35",
+          "severity": "Low"
+        }
+      ]
+    }
+  ]
+}

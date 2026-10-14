@@ -50,6 +50,8 @@ const RANK: Record<Outcome, number> = { Failed: 4, Blocked: 3, Passed: 2, Skippe
 
 type Defect = { id: string; severity: string; owner: string; area: string; title: string; tcs: string[]; known?: string; design?: boolean; ticket?: string };
 
+type HistoryEntry = { session: string; date: string; passRate: string; open: { id: string; severity: string }[]; fixed?: number; new?: number };
+
 type Attempt = { outcome: Outcome; knownBug?: string; feedback: string; title: string };
 
 const clean = (s: string) =>
@@ -143,8 +145,14 @@ export default class PlanReport implements Reporter {
     fs.writeFileSync(path.join(dir, `${stamp}.json`), JSON.stringify(Object.fromEntries(results), null, 2), 'utf-8');
     console.log(`\n${this.opts.feature} report: ${file}`);
 
-    const token = process.env.CLICKUP_API_TOKEN;
     if (!complete) return console.log('Partial run: report written locally, not published to ClickUp.');
+    if (this.defectState(results)) {
+      const att = [...results.values()].filter((r) => ['Passed', 'Failed', 'Blocked'].includes(r.outcome));
+      const passed = att.filter((r) => r.outcome === 'Passed').length;
+      this.saveHistory(this.historyEntry(results, att.length ? `${((passed / att.length) * 100).toFixed(1)}%` : 'n/a'));
+      console.log(`Defect history updated: ${this.historyFile()} (commit it to share the trend).`);
+    }
+    const token = process.env.CLICKUP_API_TOKEN;
     if (!token || process.env.PHX_PUBLISH_REPORT === 'false') {
       return console.log('ClickUp publishing off (set CLICKUP_API_TOKEN to publish).');
     }
@@ -156,37 +164,107 @@ export default class PlanReport implements Reporter {
     }
   }
 
+  private defectsFile() {
+    return path.join('src', 'test-plan', `${this.opts.module}.defects.json`);
+  }
+
+  /** Session history (tracked in git so the trend is shared): one entry per complete run. */
+  private historyFile() {
+    return path.join('src', 'test-plan', `${this.opts.module}.history.json`);
+  }
+
+  private loadHistory(): HistoryEntry[] {
+    const file = this.historyFile();
+    return fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf-8')) as { sessions: HistoryEntry[] }).sessions : [];
+  }
+
   /**
-   * "## Defects" from src/test-plan/<module>.defects.json (if present): a defect
-   * is listed when one of its cases is Failed or Blocked in this run; design
-   * defects (the Figma file itself) are always listed. Failed/Blocked cases
-   * that match no defect are listed so the register can be extended.
+   * Open defects for this run, from src/test-plan/<module>.defects.json: a
+   * defect is open when one of its cases is Failed or Blocked (design defects,
+   * in the Figma file itself, are always open). Null when no register exists.
    */
-  private renderDefects(results: Map<string, CaseResult>): string[] {
-    const file = path.join('src', 'test-plan', `${this.opts.module}.defects.json`);
-    if (!fs.existsSync(file)) return [];
-    const { defects } = JSON.parse(fs.readFileSync(file, 'utf-8')) as { defects: Defect[] };
+  defectState(results: Map<string, CaseResult>) {
+    if (!fs.existsSync(this.defectsFile())) return null;
+    const { defects } = JSON.parse(fs.readFileSync(this.defectsFile(), 'utf-8')) as { defects: Defect[] };
     const bad = (id: string) => ['Failed', 'Blocked'].includes(results.get(id)?.outcome ?? '');
     const order = ['Critical', 'High', 'Medium', 'Low'];
     const open = defects
       .filter((d) => d.design || d.tcs.some(bad))
       .sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
-    const fixed = defects.filter((d) => !d.design && !d.tcs.some(bad) && d.tcs.some((id) => results.get(id)?.outcome === 'Passed'));
     const covered = new Set(defects.flatMap((d) => d.tcs));
     const unmapped = [...results].filter(([id, r]) => ['Failed', 'Blocked'].includes(r.outcome) && !covered.has(id)).map(([id]) => id);
+    const history = this.loadHistory().filter((h) => h.session !== this.pageName());
+    const previous = history[history.length - 1];
+    const prevOpen = new Set(previous?.open.map((o) => o.id) ?? []);
+    const everOpen = new Set(history.flatMap((h) => h.open.map((o) => o.id)));
+    const openIds = new Set(open.map((d) => d.id));
+    const fixed = previous ? defects.filter((d) => prevOpen.has(d.id) && !openIds.has(d.id)) : [];
+    const since = (d: Defect) =>
+      !previous ? 'Baseline' : prevOpen.has(d.id) ? 'Still open' : everOpen.has(d.id) ? 'Reopened' : 'New';
+    return { defects, open, fixed, unmapped, history, previous, since };
+  }
+
+  /** "## Defect trend": one row per past session plus this one. Goes on the report page. */
+  private renderTrend(results: Map<string, CaseResult>, passRate: string): string[] {
+    const st = this.defectState(results);
+    if (!st) return [];
+    const count = (list: { severity: string }[], s: string) => list.filter((d) => d.severity === s).length;
+    const row = (h: HistoryEntry) =>
+      `| ${cell(h.session)} | ${h.passRate} | **${h.open.length}** | ${count(h.open, 'Critical')} | ${count(h.open, 'High')} | ${count(h.open, 'Medium')} | ${count(h.open, 'Low')} | ${h.fixed ?? '—'} | ${h.new ?? '—'} |`;
+    const current = this.historyEntry(results, passRate);
+    const delta = st.previous ? current.open.length - st.previous.open.length : 0;
+    return [
+      '## Defect trend',
+      '',
+      st.previous
+        ? `Open defects: **${current.open.length}** (${delta <= 0 ? '' : '+'}${delta} vs ${cell(st.previous.session)}) — ${current.fixed} fixed, ${current.new} new or reopened since the previous session.`
+        : `Open defects: **${current.open.length}** — first session with a defect register (baseline).`,
+      '',
+      '| Session | Pass rate | Open defects | Critical | High | Medium | Low | Fixed since previous | New since previous |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+      ...st.history.map(row),
+      row(current).replace(/^\| ([^|]+) \|/, '| **$1 (this session)** |'),
+      '',
+      ...(st.fixed.length ? [`**Fixed since the previous session:** ${st.fixed.map((d) => `${d.id} — ${cell(d.title)}`).join('; ')}`, ''] : []),
+    ];
+  }
+
+  /** "## Defects" table. Goes on the report page and at the top of "Test plan with feedback". */
+  private renderDefects(results: Map<string, CaseResult>): string[] {
+    const st = this.defectState(results);
+    if (!st) return [];
     const icon = (id: string) => ({ Failed: '❌', Blocked: '⛔', Passed: '✅', Skipped: '⏭️' } as Record<string, string>)[results.get(id)?.outcome ?? ''] ?? '✋';
+    const status = (d: Defect) => (d.ticket ? cell(d.ticket) : d.known ? `Known bug (${cell(d.known)})` : d.design ? 'Design (Figma)' : 'Ticket to file');
     return [
       '## Defects',
       '',
-      `${open.length} open defect(s) behind the Failed and Blocked cases above, most severe first. Severity is the defect's impact on CS work (not the test-case priority).`,
+      `${st.open.length} open defect(s) behind the Failed and Blocked cases, most severe first. Severity is the defect's impact on CS work (not the test-case priority). Register: ${this.defectsFile()}.`,
       '',
-      '| ID | Severity | Defect | Area | Owner | Test cases | Status |',
-      '| --- | --- | --- | --- | --- | --- | --- |',
-      ...open.map((d) => `| ${d.id} | ${d.severity} | ${cell(d.title)} | ${cell(d.area)} | ${d.owner} | ${d.tcs.map((id) => `${icon(id)} ${id}`).join('<br>')} | ${d.ticket ? cell(d.ticket) : d.known ? `Known bug (${cell(d.known)})` : d.design ? 'Design (Figma)' : 'New — ticket to file'} |`),
+      '| ID | Severity | Defect | Area | Owner | Test cases | Since last session | Ticket / status |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      ...st.open.map((d) => `| ${d.id} | ${d.severity} | ${cell(d.title)} | ${cell(d.area)} | ${d.owner} | ${d.tcs.map((id) => `${icon(id)} ${id}`).join('<br>')} | ${st.since(d)} | ${status(d)} |`),
       '',
-      ...(fixed.length ? [`**No longer reproduced:** ${fixed.map((d) => `${d.id} (${cell(d.title)})`).join('; ')}`, ''] : []),
-      ...(unmapped.length ? [`**Failed/Blocked cases not linked to a defect yet:** ${unmapped.join(', ')}`, ''] : []),
+      ...(st.unmapped.length ? [`**Failed/Blocked cases not linked to a defect yet:** ${st.unmapped.join(', ')} — add them to the register.`, ''] : []),
     ];
+  }
+
+  historyEntry(results: Map<string, CaseResult>, passRate: string): HistoryEntry {
+    const st = this.defectState(results)!;
+    const prevOpen = new Set(st.previous?.open.map((o) => o.id) ?? []);
+    return {
+      session: this.pageName(),
+      date: this.started.toISOString(),
+      passRate,
+      open: st.open.map((d) => ({ id: d.id, severity: d.severity })),
+      fixed: st.previous ? st.fixed.length : undefined,
+      new: st.previous ? st.open.filter((d) => !prevOpen.has(d.id)).length : undefined,
+    };
+  }
+
+  /** Appends (or replaces, same session name) this run in the history file. */
+  saveHistory(entry: HistoryEntry) {
+    const sessions = [...this.loadHistory().filter((h) => h.session !== entry.session), entry];
+    fs.writeFileSync(this.historyFile(), JSON.stringify({ note: 'One entry per complete test session; written by plan-report.ts. Commit it so the defect trend is shared.', sessions }, null, 2) + '\n', 'utf-8');
   }
 
   private pageName() {
@@ -260,6 +338,7 @@ export default class PlanReport implements Reporter {
       '',
       `**Release verdict:** ${verdict}`,
       '',
+      ...this.renderTrend(results, pct(passed.length, attempted)),
       '## Results by section',
       '',
       '| Section | Cases | Passed | Failed | Skipped | Blocked | Manual | Pass rate |',
@@ -284,7 +363,11 @@ export default class PlanReport implements Reporter {
       '**Test data needs** (to turn Skipped into executed): ' + ([...new Set(skipped.map((c) => results.get(c.id)!.feedback))].map((f) => `"${cell(f)}"`).join('; ') || 'none'),
       '',
       ...this.renderDefects(results),
+      // ClickUp: everything from here is the "Test plan with feedback" sub-page.
       '## Test plan with feedback',
+      '',
+      ...this.renderDefects(results),
+      '## Test plan',
       '',
       renderPlanTable(this.plan, results),
     ].join('\n');
