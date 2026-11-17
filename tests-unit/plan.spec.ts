@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { caseTitle, normaliseId, readPlan, renameIds } from '../src/support/plan';
+import { caseTitle, normaliseId, readPlan, renameIds, renamesFor } from '../src/support/plan';
 import { resultLine } from '../src/reporting/ejara-results';
 
 const dir = mkdtempSync(path.join(tmpdir(), 'plan-'));
@@ -35,4 +35,18 @@ test('renaming covers titles and tc() calls, whole IDs only', () => {
 test('runner results: one line per test, final attempt', () => {
   const line = resultLine({ title: 'KYC-012 tabs', titlePath: () => ['', 'kyc/01.spec.ts', 'KYC - Account list', 'KYC-012 tabs'], location: { file: path.join(process.cwd(), 'tests/kyc/01.spec.ts') } }, { status: 'failed', duration: 812.4, error: { message: 'expected 2 tabs' } });
   expect(line).toEqual({ title: 'KYC-012 tabs', fullTitle: 'kyc/01.spec.ts › KYC - Account list › KYC-012 tabs', file: 'tests/kyc/01.spec.ts', passed: false, skipped: false, error: 'expected 2 tabs', durationMs: 812 });
+});
+
+test('renaming a swap in one pass: LOG-001 ↔ LOG-002 does not undo itself', () => {
+  const { text, changes } = renameIds(`it('LOG-001 pin', …); it('LOG-002 bio', …);`, { 'LOG-001': 'LOG-002', 'LOG-002': 'LOG-001' });
+  expect(text).toBe(`it('LOG-002 pin', …); it('LOG-001 bio', …);`);
+  expect(changes.length).toBe(2);
+});
+
+test('renames from the plan files: cases renumbered in the tool are found by their stable key', () => {
+  const file = (cases: { id: string; key: string }[]) => ({ version: 1, app: 'Ejara', module: 'Login', kind: 'feature', prefix: 'LOG', cases: cases.map((c) => ({ ...c, title: '', sections: [], flows: [], labels: [], tags: [], priority: 'high', platforms: [], environments: [], automation: null, legacyIds: [], version: 1 })) });
+  const previous = [file([{ id: 'LOG-001', key: 'a' }, { id: 'LOG-002', key: 'b' }, { id: 'LOG-003', key: 'c' }])];
+  const bundle = { version: 1, generatedAt: '', app: 'Ejara', framework: null, files: { 'test-plan/login.json': file([{ id: 'LOG-002', key: 'a' }, { id: 'LOG-001', key: 'b' }, { id: 'LOG-003', key: 'c' }]) }, idMap: { 'SMK-01': 'LOG-003' }, conflicts: [] };
+  expect(renamesFor(previous, bundle)).toEqual({ 'SMK-01': 'LOG-003', 'LOG-001': 'LOG-002', 'LOG-002': 'LOG-001' });
+  expect(renamesFor([], bundle)).toEqual({ 'SMK-01': 'LOG-003' });
 });
