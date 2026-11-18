@@ -7,6 +7,8 @@ import path from 'node:path';
 
 export interface PlanCase {
   id: string;
+  /** The tool's stable key of the case: never changes, even when the TC ID is renumbered. */
+  key?: string;
   title: string;
   sections: string[];
   flows: string[];
@@ -81,21 +83,43 @@ export function caseTitle(plan: Plan, id: string, title: string, warn: (m: strin
 }
 
 /**
- * Renames former IDs to TC IDs in a test file. Only whole IDs, with or without "TC-"; longest IDs first so
- * "SMK-12b" isn't touched by the rule for "SMK-12".
+ * Renames IDs in a test file, all in one pass (so a swap LOG-001 ↔ LOG-002 doesn't undo itself). Only whole IDs,
+ * with or without "TC-"; longest IDs first so "SMK-12b" isn't taken for "SMK-12".
  */
 export function renameIds(source: string, idMap: Record<string, string>): { text: string; changes: { from: string; to: string; count: number }[] } {
-  let text = source;
-  const changes: { from: string; to: string; count: number }[] = [];
-  for (const from of Object.keys(idMap).sort((a, b) => b.length - a.length)) {
-    const to = idMap[from];
-    const re = new RegExp(`(?<![A-Za-z0-9-])(?:TC-)?${from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9])`, 'g');
-    let count = 0;
-    text = text.replace(re, () => {
-      count++;
-      return to;
-    });
-    if (count) changes.push({ from, to, count });
-  }
+  const from = Object.keys(idMap).filter((k) => idMap[k] !== k).sort((a, b) => b.length - a.length);
+  if (!from.length) return { text: source, changes: [] };
+  const counts = new Map<string, number>();
+  const re = new RegExp(`(?<![A-Za-z0-9-])(?:TC-)?(${from.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9])`, 'g');
+  const text = source.replace(re, (_m, id: string) => {
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+    return idMap[id];
+  });
+  const changes = from.filter((k) => counts.has(k)).map((k) => ({ from: k, to: idMap[k], count: counts.get(k)! }));
   return { text, changes };
+}
+
+/** The plan files the repo has now (before applying a new bundle). */
+export function readPlanFiles(dir: string): PlanFile[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((x) => x.endsWith('.json'))
+    .sort()
+    .map((f) => JSON.parse(readFileSync(path.join(dir, f), 'utf8')) as PlanFile);
+}
+
+/**
+ * The renames a new bundle brings: former IDs of adopted tests (bundle idMap), plus cases whose TC ID changed since
+ * the repo's current plan files (renumbered when cases were reordered), found by their stable key.
+ */
+export function renamesFor(previous: PlanFile[], bundle: PlanBundle): Record<string, string> {
+  const out: Record<string, string> = { ...bundle.idMap };
+  const before = new Map<string, string>();
+  for (const f of previous) for (const c of f.cases) if (c.key) before.set(c.key, c.id);
+  for (const f of Object.values(bundle.files))
+    for (const c of f.cases) {
+      const old = c.key ? before.get(c.key) : undefined;
+      if (old && old !== c.id) out[old] = c.id;
+    }
+  return out;
 }

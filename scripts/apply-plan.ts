@@ -1,7 +1,8 @@
 /**
  * Applies the plan bundle downloaded from the Ejara Automation Tool (App page › Automation › Download the plan bundle):
  *   1. writes test-plan/*.json (generated files: never edit them by hand)
- *   2. renames former IDs to TC IDs in tests/** (titles and tc() calls, e.g. "KYC-ACC-001" → "KYC-012")
+ *   2. renames former IDs to TC IDs, and TC IDs renumbered in the tool (cases reordered), found by comparing
+ *      the current test-plan/ files with the bundle in tests/** (titles and tc() calls, e.g. "KYC-ACC-001" → "KYC-012")
  *
  *   npm run plan:apply -- ~/Downloads/ejara-plan-bundle.json           # dry run: shows what would change
  *   npm run plan:apply -- ~/Downloads/ejara-plan-bundle.json --write   # writes
@@ -9,7 +10,7 @@
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { renameIds, type PlanBundle } from '../src/support/plan.ts';
+import { readPlanFiles, renameIds, renamesFor, type PlanBundle } from '../src/support/plan.ts';
 
 const [bundlePath, flag] = process.argv.slice(2);
 if (!bundlePath) {
@@ -23,7 +24,10 @@ if (bundle.version !== 1) throw new Error(`Unknown bundle version ${bundle.versi
 
 const planDir = path.join(root, 'test-plan');
 const files = Object.keys(bundle.files);
-console.log(`${bundle.app}: ${files.length} plan file(s), ${Object.keys(bundle.idMap).length} former ID(s) to rename (bundle of ${bundle.generatedAt})`);
+// Read before the plan files are replaced: renumbered cases are found by comparing them with the bundle.
+const renames = renamesFor(readPlanFiles(planDir), bundle);
+const renumbered = Object.keys(renames).filter((k) => bundle.idMap[k] !== renames[k]).length;
+console.log(`${bundle.app}: ${files.length} plan file(s), ${Object.keys(renames).length} ID(s) to rename${renumbered > 0 ? ` (${renumbered} renumbered in the tool)` : ''} (bundle of ${bundle.generatedAt})`);
 for (const c of bundle.conflicts) console.warn(`! ${c.legacyId} is claimed by ${c.tcIds.join(' and ')}: not renamed, sort it out in the tool`);
 
 if (write) {
@@ -45,7 +49,7 @@ walk(path.join(root, 'tests'));
 let total = 0;
 for (const file of specs) {
   const before = readFileSync(file, 'utf8');
-  const renamed = renameIds(before, bundle.idMap);
+  const renamed = renameIds(before, renames);
   if (!renamed.changes.length) continue;
   total += renamed.changes.reduce((s, c) => s + c.count, 0);
   console.log(`${path.relative(root, file)}: ${renamed.changes.map((c) => `${c.from} → ${c.to}${c.count > 1 ? ` (×${c.count})` : ''}`).join(', ')}`);
