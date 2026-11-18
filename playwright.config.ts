@@ -23,6 +23,8 @@ export default defineConfig({
     ['./src/reporting/plan-report.ts', { module: 'fiat-wallet' }],
     ['./src/reporting/plan-report.ts', { module: 'user-management' }],
     ['./src/reporting/plan-report.ts', { module: 'kyc' }],
+    // Results for the Ejara Automation Tool runner, only when it runs the tests.
+    ...(process.env.EJARA_RESULTS_FILE ? ([['./src/reporting/ejara-results.ts']] as const) : []),
   ],
 
   use: {
