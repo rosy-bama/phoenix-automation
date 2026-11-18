@@ -119,25 +119,35 @@ export function renderPlanPage(plan: Plan): string {
   const cases = allCases(plan);
   const count = (f: (c: PlanCase) => boolean) => cases.filter(f).length;
   const changes = cases.filter((c) => c.change);
+  // A module's first plan (no previous version) has no change log.
+  const firstVersion = plan.previousTotal === undefined && plan.version.startsWith('1');
   return [
     `**${plan.title}**`,
     `**Scope:** ${plan.scope}`,
     `**Deferred (pending design submission):** ${plan.deferred}`,
     `**Design source:** [${plan.figmaLabel ?? 'Figma — Wallet'}](${plan.figmaFile})`,
     ...(plan.command ? [`**Automated run + report:** \`${plan.command}\``] : []),
-    `**Total test cases: ${cases.length}** (v1: ${plan.previousTotal ?? 156}) | New: ${count((c) => c.change === 'new')} | Updated: ${count((c) => c.change === 'updated')} | Automated: ${count((c) => c.automate)} | Smoke: ${count((c) => c.smoke)} | **Date:** ${plan.date}`,
+    firstVersion
+      ? `**Total test cases: ${cases.length}** | Automated: ${count((c) => c.automate)} | Smoke: ${count((c) => c.smoke)} | **Version:** ${plan.version} | **Date:** ${plan.date}`
+      : `**Total test cases: ${cases.length}** (v1: ${plan.previousTotal ?? 156}) | New: ${count((c) => c.change === 'new')} | Updated: ${count((c) => c.change === 'updated')} | Automated: ${count((c) => c.automate)} | Smoke: ${count((c) => c.smoke)} | **Date:** ${plan.date}`,
     '',
     '**Design notes**',
     ...plan.designNotes.map((n) => `- ${n}`),
     '',
-    'Legend: 🆕 new in v2, ✏️ updated in v2. The Feedback column is filled by each automated run (see Test sessions > Automatic).',
+    firstVersion
+      ? 'The Feedback column is filled by each automated run (see Test sessions > Automatic).'
+      : 'Legend: 🆕 new in v2, ✏️ updated in v2. The Feedback column is filled by each automated run (see Test sessions > Automatic).',
     '',
     renderPlanTable(plan),
-    '',
-    '**What changed in v2**',
-    '',
-    '| TC ID | Change | Why |',
-    '| --- | --- | --- |',
-    ...changes.map((c) => `| ${c.id} | ${c.change === 'new' ? 'New' : 'Updated'} | ${cell(c.note ?? c.title)} |`),
+    ...(changes.length
+      ? [
+          '',
+          `**What changed in v${plan.version.split('.')[0]}**`,
+          '',
+          '| TC ID | Change | Why |',
+          '| --- | --- | --- |',
+          ...changes.map((c) => `| ${c.id} | ${c.change === 'new' ? 'New' : 'Updated'} | ${cell(c.note ?? c.title)} |`),
+        ]
+      : []),
   ].join('\n');
 }

@@ -22,6 +22,8 @@ export const env = {
   /** User Management: Confirmed account used for read-only checks. */
   umUsername: process.env.PHX_UM_USERNAME ?? 'rosetestbox',
   allowAccountOps: process.env.PHX_ALLOW_ACCOUNT_OPS === 'true',
+  /** KYC: approve / reject / manual verification on disposable pending requests. */
+  allowKycOps: process.env.PHX_ALLOW_KYC_OPS === 'true',
 };
 
 if (env.targetEnv === 'production') {

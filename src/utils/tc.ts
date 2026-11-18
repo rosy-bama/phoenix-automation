@@ -54,5 +54,13 @@ export function requireAccountOps(envVar: string, what: string): string {
   return username;
 }
 
+/**
+ * KYC decisions (approve, reject, manual verification submit) only run on
+ * testbox with PHX_ALLOW_KYC_OPS=true: they consume a pending request.
+ */
+export function requireKycOps(what: string) {
+  if (!env.allowKycOps) unmet(`Changes a KYC request: set PHX_ALLOW_KYC_OPS=true (testbox only, disposable pending request) to ${what}`);
+}
+
 /** Short timeout for design checks on an already-loaded screen. */
 export const DESIGN = { timeout: 5_000 };

@@ -1,0 +1,2053 @@
+{
+ "title": "Ejara Admin Panel — KYC & Compliance Module Test Plan (v1)",
+ "version": "1.0",
+ "date": "2026-10-14",
+ "module": "KYC",
+ "figmaFile": "https://www.figma.com/design/wupOXbtxsxrenOpL5AfM4u/Design?node-id=1733-20463",
+ "figmaLabel": "Figma — KYC",
+ "command": "npm run test:kyc:report",
+ "scope": "Kyc & Comp. module: Requests list (Pending / Confirmed / Rejected), search, filters, export, pagination; Request preview with submission history; the Verification request review wizard (ID card 9 checks, Selfie 3 checks, Additional documents 6 checks, Review details); approval; rejection flow and the 17 rejection reasons; Account list (Required only / Fully completed); Manual verification wizard (Check user → Personal information → ID document → Selfie → Localization plan → IUN → Review details).",
+ "deferred": "Filters panel content and Export file (not designed on the KYC page), Manual verification Review details and submit result (frames stop at IUN upload), rejection-reason option lists other than Document originality and First name (only \"About\" notes), approval success toast (not designed), user notifications (outside the admin panel).",
+ "designNotes": [
+  "Read from the Figma KYC page (node 1733:20463) on 14 Oct 2026 via the prototype view. Values on screens (names, dates, usernames) are samples: tests check structure, labels and behaviour.",
+  "Two review variants exist: \"Review Request\" (ID card + selfie, user goes Unverified → Required only) and \"Review Request (Extended)\" (adds Additional documents: localization plan + IUN, Required only → Fully completed). Question 2/9 is \"Is the image visible?\" in one and \"Is the document still valid?\" in the other — confirm which the build uses.",
+  "Design copy issues to raise: \"Personal informations\", \"Date of of birth\", \"National identity recipe\", \"All verified account\", Localization plan screen reusing \"Upload ID document / front side / back side\", selfie step titled \"ID Card checking details\" in one frame.",
+  "State-changing cases (approve, reject, manual verification uploads/submit) only run with PHX_ALLOW_KYC_OPS=true and disposable pending requests/users; otherwise they are reported as Skipped with the missing requirement.",
+  "Rejection options other than Document originality (photocopy / different documents / front missing / back missing) and First name (mismatch possible fraud / unreadable) are inferred from the \"About - Rejection\" notes and must be confirmed against the build."
+ ],
+ "sections": [
+  {
+   "id": "1",
+   "name": "Navigation and access",
+   "figma": "2167:153309 (7. Request List), 2996:136116 (7. Account List)",
+   "pre": "Agent is logged into the Admin Panel with an account that has KYC permissions.",
+   "cases": [
+    {
+     "id": "KYC-NAV-001",
+     "title": "Sidebar shows the \"Kyc & Comp.\" group with Requests and Account list",
+     "steps": [
+      "Look at the left sidebar.",
+      "Expand \"Kyc & Comp.\"."
+     ],
+     "expected": "Sidebar shows \"Kyc & Comp.\" between Goals savings and User management; expanding it shows two sub-items, \"Requests\" and \"Account list\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-NAV-002",
+     "title": "Requests opens \"All verification requests\" on the Pending tab",
+     "steps": [
+      "Click Kyc & Comp. > Requests."
+     ],
+     "expected": "Page heading \"All verification requests\", subtitle \"Let agents locate the right user quickly, with enough summary information to triage before opening the full account detail.\", Pending tab selected by default, \"Requests\" highlighted in the sidebar, breadcrumb \"<KYC icon> / Requests\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-NAV-003",
+     "title": "Account list opens \"All verified account\"",
+     "steps": [
+      "Click Kyc & Comp. > Account list."
+     ],
+     "expected": "Page heading \"All verified account\", same subtitle as Requests, \"Required only\" tab selected by default, \"Account list\" highlighted in the sidebar, breadcrumb \"<KYC icon> / Account list\", \"Manual verification\" button top right.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-NAV-004",
+     "title": "Direct URL access and page refresh keep the current KYC page",
+     "steps": [
+      "Open the Requests page, note the URL.",
+      "Reload the page.",
+      "Open the URL in a new tab of the same session."
+     ],
+     "expected": "The same page (and tab, when the tab is in the URL) is shown after reload and in the new tab; no error page, no redirect to the dashboard.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-NAV-005",
+     "title": "Agent without KYC permission cannot reach KYC pages",
+     "steps": [
+      "Log in with an agent role without KYC permission.",
+      "Look at the sidebar.",
+      "Open the Requests URL directly."
+     ],
+     "expected": "\"Kyc & Comp.\" is hidden (or disabled) and the direct URL shows an access-denied message; no KYC data is returned.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "A second agent account without KYC permission exists.",
+     "note": "Figma \"Required conditions\": authenticated agent with KYC permissions."
+    },
+    {
+     "id": "KYC-NAV-006",
+     "title": "Logged-out user is redirected to login from any KYC URL",
+     "steps": [
+      "Log out.",
+      "Open the Requests URL and the Account list URL."
+     ],
+     "expected": "Both redirect to the login page; after login the agent lands back on the requested KYC page or the dashboard.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "2",
+   "name": "Requests list — Pending tab",
+   "figma": "2167:153310 (7. Request List - Pending)",
+   "pre": "Agent is on Kyc & Comp. > Requests; at least one pending request exists.",
+   "cases": [
+    {
+     "id": "KYC-REQ-001",
+     "title": "Three status tabs Pending, Confirmed, Rejected with Pending selected",
+     "steps": [
+      "Observe the tab row under the subtitle."
+     ],
+     "expected": "Exactly three tabs in this order: Pending, Confirmed, Rejected. Pending is selected by default; only one tab is selected at a time.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REQ-002",
+     "title": "Pending table columns in order",
+     "steps": [
+      "Observe the table header."
+     ],
+     "expected": "Columns: select-all checkbox, Username, Submission type, Country, Requested by, Requested date, and an action column with \"View request\" on every row.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REQ-003",
+     "title": "Submission type badge shows New or Resubmission",
+     "steps": [
+      "Look at the Submission type column."
+     ],
+     "expected": "Every row shows a badge: \"New\" (green dot) for a first submission or \"Resubmission\" (orange dot) for a request sent after a rejection. No empty or unknown values.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-004",
+     "title": "Pending tab lists only pending requests",
+     "steps": [
+      "Open \"View request\" on the first and last rows of the page."
+     ],
+     "expected": "The Request preview shows status \"Pending\" for each sampled row.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-005",
+     "title": "Username is shown with @ prefix and Requested by shows the submitter",
+     "steps": [
+      "Compare Username and Requested by on several rows."
+     ],
+     "expected": "Username shows \"@<username>\". Requested by shows \"@<username>\" of the submitter: the same user for self-submitted KYC, or the agent when the request was submitted on the user's behalf (e.g. @creativeuser234 requested by @recitSongue in Figma).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-006",
+     "title": "Requested date format",
+     "steps": [
+      "Read the Requested date column."
+     ],
+     "expected": "Dates read like \"Mar 25, 2025 2:00 AM\" (MMM D, YYYY h:mm AM/PM).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-007",
+     "title": "Country column shows the user country of residence",
+     "steps": [
+      "Read the Country column and open a request preview."
+     ],
+     "expected": "Country is a full country name (Cameroon, Togo, Senegal, Burkina Faso, Ivory Coast…) and matches \"Country of Residence\" in the preview.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-008",
+     "title": "Default sort is oldest request first (queue order)",
+     "steps": [
+      "Read the Requested date column top to bottom on page 1."
+     ],
+     "expected": "Requests are ordered by Requested date ascending (oldest first) so the queue is worked in order; any other order is reported.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "note": "Figma sample data is ascending. Product to confirm whether resubmissions are prioritised (Preview Pending \"Implications\")."
+    },
+    {
+     "id": "KYC-REQ-009",
+     "title": "Row checkbox and select-all",
+     "steps": [
+      "Tick one row checkbox.",
+      "Tick the select-all checkbox.",
+      "Untick select-all."
+     ],
+     "expected": "Single tick selects only that row; select-all selects every row on the page; unticking clears all. Selection does not open the preview.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-010",
+     "title": "\"View request\" opens the Request preview panel",
+     "steps": [
+      "Click \"View request\" on a row."
+     ],
+     "expected": "A side panel \"Request preview\" slides in from the right over a dimmed list, for the clicked user.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REQ-011",
+     "title": "Empty state when there is no pending request",
+     "steps": [
+      "Open the Pending tab with no pending requests (or filter to none)."
+     ],
+     "expected": "An empty-state message is shown instead of an empty table or an error; pagination is hidden or shows 0 results.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-012",
+     "title": "A new user submission appears in Pending",
+     "steps": [
+      "Submit KYC from the Ejara app with a test user.",
+      "Refresh the Pending tab."
+     ],
+     "expected": "The request appears with Submission type \"New\", the correct country, Requested by = the user, and the submission time as Requested date.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Test user with an unverified account in the Ejara mobile app."
+    },
+    {
+     "id": "KYC-REQ-013",
+     "title": "A resubmission after rejection appears as \"Resubmission\"",
+     "steps": [
+      "Reject a request.",
+      "Resubmit KYC from the app with the same user.",
+      "Refresh the Pending tab."
+     ],
+     "expected": "The request appears with Submission type \"Resubmission\"; the preview shows the earlier rejected submission in its history.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "3",
+   "name": "Requests list — Confirmed and Rejected tabs",
+   "figma": "2167:157645 (Confirmed), 2174:158092 (Rejected)",
+   "pre": "Agent is on Kyc & Comp. > Requests.",
+   "cases": [
+    {
+     "id": "KYC-REQ-020",
+     "title": "Confirmed tab columns and content",
+     "steps": [
+      "Click the Confirmed tab.",
+      "Observe the header and the first rows."
+     ],
+     "expected": "Confirmed becomes the only selected tab. Columns: checkbox, Username, Requested date, Country, Reviewed by, Reviewed date, \"View request\". Submission type is not shown. Every sampled preview shows status \"Confirmed\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REQ-021",
+     "title": "Rejected tab columns and content",
+     "steps": [
+      "Click the Rejected tab.",
+      "Observe the header and the first rows."
+     ],
+     "expected": "Rejected becomes the only selected tab. Columns: checkbox, Username, Requested date, Country, Reviewed by, Reviewed date, \"View request\". Submission type is not shown. Every sampled preview shows status \"Rejected\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-022",
+     "title": "Reviewed by shows the agent who decided",
+     "steps": [
+      "On Confirmed or Rejected, read Reviewed by."
+     ],
+     "expected": "Reviewed by is \"@<agent username>\" of the agent who approved/rejected; never empty.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-023",
+     "title": "Reviewed date is on or after Requested date",
+     "steps": [
+      "Compare Requested date and Reviewed date on each row."
+     ],
+     "expected": "Reviewed date uses the same format and is never earlier than Requested date.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-024",
+     "title": "Switching tabs resets to page 1 and keeps the search",
+     "steps": [
+      "Go to page 2 of Pending.",
+      "Type a search term.",
+      "Switch to Confirmed."
+     ],
+     "expected": "Confirmed opens on page 1; the search term is either kept and applied or cleared consistently (report which).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-025",
+     "title": "An approved request moves from Pending to Confirmed",
+     "steps": [
+      "Approve a pending request (section 11).",
+      "Check Pending and Confirmed."
+     ],
+     "expected": "The request is gone from Pending and appears in Confirmed with Reviewed by = current agent and Reviewed date = now.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-REQ-026",
+     "title": "A rejected request moves from Pending to Rejected",
+     "steps": [
+      "Reject a pending request (section 12).",
+      "Check Pending and Rejected."
+     ],
+     "expected": "The request is gone from Pending and appears in Rejected with Reviewed by = current agent and Reviewed date = now.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    }
+   ]
+  },
+  {
+   "id": "4",
+   "name": "Requests list — search, filters, refresh, export, pagination",
+   "figma": "2167:153310",
+   "pre": "Agent is on Kyc & Comp. > Requests, Pending tab, with more than 8 requests.",
+   "cases": [
+    {
+     "id": "KYC-REQ-030",
+     "title": "Search toolbar elements",
+     "steps": [
+      "Observe the toolbar above the table."
+     ],
+     "expected": "Refresh icon, search box with placeholder \"Search account...\" and magnifier, \"Filters\" button, and \"Export\" button (with download icon) on the right.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REQ-031",
+     "title": "Search by exact username",
+     "steps": [
+      "Type an existing username in the search box."
+     ],
+     "expected": "Only rows whose Username contains the term are listed; the results count updates.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-032",
+     "title": "Search is case-insensitive and accepts a leading @",
+     "steps": [
+      "Search the same username in UPPER case.",
+      "Search it with a leading \"@\"."
+     ],
+     "expected": "Both return the same rows as the lowercase search.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-033",
+     "title": "Search with no match",
+     "steps": [
+      "Search \"zzzz-no-such-user\"."
+     ],
+     "expected": "Empty state / \"no results\" message, no error; clearing the search restores the list.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-034",
+     "title": "Search on Confirmed and Rejected tabs",
+     "steps": [
+      "Repeat a username search on Confirmed and Rejected."
+     ],
+     "expected": "Search works on each tab and only returns that tab's requests.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-035",
+     "title": "Search input robustness",
+     "steps": [
+      "Search with spaces only, 100+ characters, and special characters (' \" % _ ; --)."
+     ],
+     "expected": "No crash or server error; the list shows no results or the full list; the input is not interpreted.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-036",
+     "title": "Filters panel opens and lists filter fields",
+     "steps": [
+      "Click \"Filters\"."
+     ],
+     "expected": "A filter panel opens (expected fields: Submission type, Country, Requested date range; on Confirmed/Rejected also Reviewed by / Reviewed date). Report the actual fields.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "note": "Filter panel is not designed on the KYC page; expected fields inferred from the table columns."
+    },
+    {
+     "id": "KYC-REQ-037",
+     "title": "Filter by Submission type",
+     "steps": [
+      "Filter Pending by \"Resubmission\"."
+     ],
+     "expected": "Only Resubmission rows are shown; a filter count/chip shows the active filter; clearing restores the list.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-038",
+     "title": "Filter by Country and date range",
+     "steps": [
+      "Filter by Country = Cameroon.",
+      "Add a Requested date range."
+     ],
+     "expected": "Only matching rows are shown; combining filters narrows the results (AND).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-039",
+     "title": "Refresh reloads the list without losing tab or filters",
+     "steps": [
+      "Apply a search, click the refresh icon."
+     ],
+     "expected": "The table reloads (loading state shown), tab and search stay applied.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-040",
+     "title": "Export downloads the current list",
+     "steps": [
+      "Click \"Export\"."
+     ],
+     "expected": "A file download (CSV/XLSX) starts or an export dialog opens; the export respects the current tab/search/filters. Report the behaviour.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Export screen not designed."
+    },
+    {
+     "id": "KYC-REQ-041",
+     "title": "Pagination footer",
+     "steps": [
+      "Observe the footer."
+     ],
+     "expected": "\"Per page\" selector (default 8), \"Showing 1 to 8 of N results\", previous/next arrows and numbered pages with ellipsis.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-042",
+     "title": "Next, previous and numbered page navigation",
+     "steps": [
+      "Click next arrow, then page 3, then previous arrow."
+     ],
+     "expected": "Rows change each time; \"Showing X to Y\" updates; previous is disabled on page 1 and next on the last page.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-043",
+     "title": "Change rows per page",
+     "steps": [
+      "Change Per page to a larger value."
+     ],
+     "expected": "The table shows that many rows; \"Showing\" range updates; the agent returns to page 1.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REQ-044",
+     "title": "Total count consistency",
+     "steps": [
+      "Note N in \"of N results\", go to the last page."
+     ],
+     "expected": "The last page \"Showing\" upper bound equals N.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "5",
+   "name": "Request preview panel",
+   "figma": "1831:1669, 2174:159745, 2174:160313, 2174:160991 (7. Request - Details 1-3)",
+   "pre": "Agent clicked \"View request\" on a Pending row.",
+   "cases": [
+    {
+     "id": "KYC-PRV-001",
+     "title": "Preview header and current submission block",
+     "steps": [
+      "Observe the panel."
+     ],
+     "expected": "Title \"Request preview\" with a close (X) button; \"Current submission\" section with a \"Pending\" status badge, Submission date, Requested by (@user) and Current KYC status badge.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-PRV-002",
+     "title": "Personal information card for a first-level request",
+     "steps": [
+      "Observe the card under Current submission for a \"New\" request of an Unverified user."
+     ],
+     "expected": "Card \"Personal informations\" with First name, Last name, Gender, Date of Birth (e.g. \"October 22, 1995\"), Country of Residence, Citizenship; then \"ID card\" with two thumbnails (front, back) and \"Selfie\" with one thumbnail.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "note": "Figma heading reads \"Personal informations\" — typo raised as a design note."
+    },
+    {
+     "id": "KYC-PRV-003",
+     "title": "Current KYC status badge values",
+     "steps": [
+      "Open previews of users at different KYC levels."
+     ],
+     "expected": "Badge shows \"Unverified\" for a first submission and \"Required only\" for a user who passed the required level and now submits additional documents.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-004",
+     "title": "Completion request shows Proof of residence and IUN",
+     "steps": [
+      "Open the preview of a completion request (user already \"Required only\")."
+     ],
+     "expected": "Card shows \"Proof of residence\" and \"IUN\" thumbnails instead of the personal-information/ID/selfie set.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-005",
+     "title": "Submission history accordion",
+     "steps": [
+      "Open the preview of a Resubmission request.",
+      "Expand \"Submission of <date>\"."
+     ],
+     "expected": "Earlier submissions are listed under the current one as collapsible rows \"Submission of <Month DD>\" with a Rejected or Confirmed badge; expanding shows that submission's data and the rejection reason.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-006",
+     "title": "Document thumbnails open a larger view",
+     "steps": [
+      "Click an ID card or selfie thumbnail."
+     ],
+     "expected": "The image opens larger (lightbox or viewer); broken images show a placeholder, not an empty box.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-007",
+     "title": "\"Review request\" starts the review",
+     "steps": [
+      "Click \"Review request\"."
+     ],
+     "expected": "The Verification request review page opens for the same user (breadcrumb \"@<user> / Verification request review\"), on Required documents step 1/9.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-PRV-008",
+     "title": "Close the preview",
+     "steps": [
+      "Click X.",
+      "Reopen and click the dimmed list area.",
+      "Reopen and press Esc."
+     ],
+     "expected": "The panel closes each time and the list is unchanged (same tab, page and search).",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-009",
+     "title": "Preview data matches the list row",
+     "steps": [
+      "Compare the row values with the preview."
+     ],
+     "expected": "Username, Requested by, Requested date and Country match between list and preview.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-010",
+     "title": "Preview of a Confirmed request is read-only",
+     "steps": [
+      "On Confirmed, click \"View request\"."
+     ],
+     "expected": "Panel shows status \"Confirmed\", the reviewed data and reviewer; no \"Review request\" button.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-PRV-011",
+     "title": "Preview of a Rejected request shows the rejection reason",
+     "steps": [
+      "On Rejected, click \"View request\"."
+     ],
+     "expected": "Panel shows status \"Rejected\", the reason(s) chosen by the agent and reviewer/date; no \"Review request\" button.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "6",
+   "name": "Review wizard — layout and navigation",
+   "figma": "1946:78501 (7. Review request), 2251:182425 (Review Request Extended)",
+   "pre": "Agent opened Review request from a Pending request preview.",
+   "cases": [
+    {
+     "id": "KYC-REV-001",
+     "title": "Review page layout",
+     "steps": [
+      "Observe the page."
+     ],
+     "expected": "Full-page view without sidebar: breadcrumb \"<icon> / @<user> / Verification request review\", \"Do you need help?\" link and close (X) top right; left stepper Required documents / Additional documents / Review details; title \"Required documents\" with subtitle \"Ensure the documents are clear and easy to understand.\"; progress bar; document viewer; \"Verification request review\" card with counter \"1/9\"; right card \"ID Card checking details\" with the \"Verified info appears here!\" placeholder.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REV-002",
+     "title": "Document viewer controls",
+     "steps": [
+      "Use Front/Back toggle, zoom in, zoom out, fullscreen, rotate left, rotate right."
+     ],
+     "expected": "Front/Back switches the ID side; zoom changes scale (zoom-out disabled at minimum); fullscreen opens the image full screen and can be closed; rotate turns the image 90° each way.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-003",
+     "title": "Question counter and progress bar advance",
+     "steps": [
+      "Answer \"Yes, it is\" to each question."
+     ],
+     "expected": "Counter goes 1/9 → 9/9 and the progress bar fills; each confirmed value is added to the right-hand checking details with a green tick.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-004",
+     "title": "Step 1 shows Cancel; later steps show Back and Next document",
+     "steps": [
+      "Observe the footer on question 1, then on question 2."
+     ],
+     "expected": "Question 1: only \"Cancel\". From question 2: \"Back\" and a \"Next document\" button that stays disabled until every question of the document is answered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-005",
+     "title": "Back returns to the previous question with its answer kept",
+     "steps": [
+      "Answer 3 questions, click Back twice."
+     ],
+     "expected": "Previous question is shown with its earlier answer; the checking details still list the answered items; answering again overwrites the value.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-006",
+     "title": "Cancel / close (X) leaves the review without a decision",
+     "steps": [
+      "Click Cancel (or X)."
+     ],
+     "expected": "Agent returns to Requests (confirmation dialog if answers would be lost); the request stays Pending and unassigned; nothing is saved as a decision.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-007",
+     "title": "\"Do you need help?\" opens help",
+     "steps": [
+      "Click \"Do you need help?\"."
+     ],
+     "expected": "Help content or a support link opens without leaving the review.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-008",
+     "title": "Stepper reflects progress",
+     "steps": [
+      "Finish Required documents, then Additional documents."
+     ],
+     "expected": "Finished steps show a green tick; the current step is highlighted; future steps are greyed. A request with no additional documents skips \"Additional documents\".",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-009",
+     "title": "Browser refresh / back during review",
+     "steps": [
+      "Answer some questions, reload the page.",
+      "Use the browser back button."
+     ],
+     "expected": "No crash. Either progress is kept or the review restarts at 1/9 with the request still Pending; browser back leaves the review cleanly.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REV-010",
+     "title": "Two agents reviewing the same request",
+     "steps": [
+      "Agent A opens a review.",
+      "Agent B opens the same request and approves it.",
+      "Agent A submits."
+     ],
+     "expected": "Agent A is told the request was already reviewed (or the request is locked for B); only one decision is stored.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "pre": "Two agent sessions."
+    },
+    {
+     "id": "KYC-REV-011",
+     "title": "Session expiry during review",
+     "steps": [
+      "Let the session expire mid-review, then answer a question."
+     ],
+     "expected": "Agent is sent to login; no partial decision is stored; after login the request is still Pending.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "7",
+   "name": "Review — ID card (Required documents, 9 questions)",
+   "figma": "1946:78501 … 1972:80086 (7. Review request, steps 1/9–9/9)",
+   "pre": "Agent is on Required documents, ID card, question 1/9.",
+   "cases": [
+    {
+     "id": "KYC-IDC-001",
+     "title": "1/9 Is the submitted document the original?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Question \"Is the submitted document the original?\" with hint \"You can zoom in to see details.\" and buttons \"No, it's not ✕\" / \"Yes, it is ✓\". Yes adds \"Document type: Original ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-002",
+     "title": "2/9 Is the image visible? (or Is the document still valid?)",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Question \"Is the image visible?\" with \"No, unreadable ✕\" / \"Yes, it is ✓\"; Yes adds \"Image: Visible ✓\". The extended design asks \"Is the document still valid?\" with \"No, it's expired ✕\" and adds \"Validity: Valid ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-003",
+     "title": "3/9 Is it the right first name?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the user's first name from the profile (e.g. \"Noelle Cecile\"); Yes adds \"First name: <value> ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-004",
+     "title": "4/9 Is it the right last name?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the last name; Yes adds \"Last name: <value> ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-005",
+     "title": "5/9 Is it the right date of birth?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the date of birth (\"November 23, 1999\"); Yes adds \"Date of birth: <value> ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-006",
+     "title": "6/9 Is it the right gender?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the gender; Yes adds \"Gender: <value> ✓\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-007",
+     "title": "7/9 Is it the right citizenship?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the citizenship country; Yes adds \"Country of citizenship: <value> ✓\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-008",
+     "title": "8/9 ID Reference entry",
+     "steps": [
+      "Read the card.",
+      "Type the ID number from the document.",
+      "Click \"Save it\"."
+     ],
+     "expected": "Question \"What's the ID Reference?\" with input (placeholder \"ex: LT052ICJ5JAUJKBT95W0\", help icon), \"It's not readable ✕\" and \"Save it ✓\". \"Save it\" is disabled while the input is empty; after saving, \"ID reference: <value> ✓\" is added (truncated with … if long).",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-009",
+     "title": "ID Reference validation",
+     "steps": [
+      "Enter spaces only.",
+      "Enter 200 characters.",
+      "Enter special characters."
+     ],
+     "expected": "Spaces-only cannot be saved; overly long or invalid formats are rejected or trimmed with a message; no crash.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-010",
+     "title": "9/9 ID expiration date entry",
+     "steps": [
+      "Choose the issued date.",
+      "Choose the expiry date.",
+      "Click \"Save it\"."
+     ],
+     "expected": "Card \"ID expiration date\" with two date pickers \"Choose the ID issued date\" / \"Choose the ID expired date\", \"It's not readable ✕\" and \"Save it ✓\" (disabled until both dates are set). Saving adds \"ID issued date\" and \"ID expired date\" with ticks.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-011",
+     "title": "Date validation for issued/expired dates",
+     "steps": [
+      "Pick an issued date in the future.",
+      "Pick an expiry date before the issued date.",
+      "Pick an expiry date in the past."
+     ],
+     "expected": "Future issued date and expiry-before-issue are blocked with a message. An expired document is flagged (validity check fails or a warning shows) instead of passing silently.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-IDC-012",
+     "title": "All ID questions answered → \"Everything is good!\"",
+     "steps": [
+      "Answer Yes to all 9 questions."
+     ],
+     "expected": "Right card lists all 10 values with ticks and a green callout \"Everything is good! Let's go ahead with the next document.\"; \"Next document\" becomes enabled.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-IDC-013",
+     "title": "Pre-filled values come from the submission",
+     "steps": [
+      "Compare values shown in questions 3–7 with the Request preview."
+     ],
+     "expected": "First name, last name, DOB, gender and citizenship shown in the questions match the submission exactly.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "8",
+   "name": "Review — Selfie (3 questions)",
+   "figma": "2025:142995, 2025:143303, 2025:115001, 2025:143503",
+   "pre": "Agent completed the ID card and clicked \"Next document\".",
+   "cases": [
+    {
+     "id": "KYC-SLF-001",
+     "title": "Selfie step layout",
+     "steps": [
+      "Observe the page."
+     ],
+     "expected": "Viewer shows the selfie (zoom, fullscreen, rotate; no Front/Back toggle); counter \"1/3\"; right card titled \"Selfie checking details\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "note": "One Figma frame titles the right card \"ID Card checking details\" on the selfie step — design inconsistency to confirm."
+    },
+    {
+     "id": "KYC-SLF-002",
+     "title": "1/3 Is the submitted selfie the original?",
+     "steps": [
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Hint \"Photocopy, screenshot, or half photo card, etc…\"; Yes adds \"Document type: Original ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-SLF-003",
+     "title": "2/3 Is the selfie compliant?",
+     "steps": [
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Hint \"Subject position, environment, visibility…\"; Yes adds \"Compliance: Good ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-SLF-004",
+     "title": "3/3 Does the selfie match the photo on the ID?",
+     "steps": [
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Hint \"Double-check the selfie.\"; Yes adds \"Match ID photo: Yes ✓\"; green \"Everything is good!\" callout; footer shows Cancel/Back and \"Continue\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-SLF-005",
+     "title": "Agent can compare selfie with ID photo",
+     "steps": [
+      "On 3/3, look for a way to see the ID photo."
+     ],
+     "expected": "The ID front image is reachable from the selfie step (side-by-side, toggle or thumbnail) so the match can be judged.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Not shown in Figma; usability expectation for a face-match decision."
+    }
+   ]
+  },
+  {
+   "id": "9",
+   "name": "Review — Additional documents (completion, 6 questions)",
+   "figma": "2251:187232, 2343:14056, 2363:14771, 2345:14297, 2641:133730, 2670:134005, 2670:134444",
+   "pre": "Agent is reviewing a completion request (user \"Required only\") and reached Additional documents.",
+   "cases": [
+    {
+     "id": "KYC-ADD-001",
+     "title": "1/6 Is the submitted localization plan valid?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Hint \"Hand-drawn map, on Word or with AI.\"; right card \"Proof of residence checking details\"; Yes adds \"Document type: Original ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-002",
+     "title": "2/6 Is the house clearly marked on the map?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Yes adds \"House marked: Clear ✓\" and shows \"Everything is good!\" for proof of residence.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-003",
+     "title": "3/6 Is the submitted IUN document the original?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Viewer switches to the IUN document with a \"Preview\" link; hint \"You can click on preview to see details.\"; right card \"IUN checking details\"; Yes adds \"Document type: Original ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-004",
+     "title": "4/6 Is the submitted IUN number valid?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Hint \"Check the tax website of the country of residence.\"; Yes adds \"Validity: Valid ✓\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-005",
+     "title": "5/6 Is it the right full name?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the full name (\"Kenfack Noelle Cecile\"); Yes adds First name and Last name with ticks.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-006",
+     "title": "6/6 Is it the right date of birth?",
+     "steps": [
+      "Read the question card.",
+      "Click \"Yes, it is\"."
+     ],
+     "expected": "Shows the DOB; Yes adds it; \"Everything is good!\" then Continue to Review details.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-007",
+     "title": "Localization plan in PDF opens in the viewer",
+     "steps": [
+      "Review a request whose localization plan is a PDF."
+     ],
+     "expected": "The PDF renders (or opens via Preview) and can be zoomed; no blank viewer.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ADD-008",
+     "title": "IUN Preview link",
+     "steps": [
+      "Click \"Preview\" on the IUN document."
+     ],
+     "expected": "The IUN document opens full size in a viewer/new tab and can be closed to return to the question.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "10",
+   "name": "Review details and approval",
+   "figma": "2025:143723 (required), 2251:182662 (extended)",
+   "pre": "Agent answered every question with \"Yes\" and clicked Continue.",
+   "cases": [
+    {
+     "id": "KYC-APR-001",
+     "title": "Review details summary (required level)",
+     "steps": [
+      "Observe the page."
+     ],
+     "expected": "Title \"Review details\"; stepper shows Required documents ✓; \"ID card\" with two thumbnails ticked and all 10 ID values with ticks; \"Selfie\" thumbnail with Compliance and Match ID photo; footer Cancel and \"Confirm\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-APR-002",
+     "title": "Review details summary (extended level)",
+     "steps": [
+      "Observe the page for a completion request."
+     ],
+     "expected": "Additionally shows \"Localization plan\" and \"IUN\" thumbnails ticked; Additional documents ✓ in the stepper.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-APR-003",
+     "title": "Summary values equal the answers given",
+     "steps": [
+      "Compare summary values with what was confirmed/entered."
+     ],
+     "expected": "Every value (including typed ID reference and picked dates) matches the answers exactly.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-APR-004",
+     "title": "Confirm approves the request",
+     "steps": [
+      "Click \"Confirm\"."
+     ],
+     "expected": "Agent returns to Requests with a success toast (e.g. \"Verification request has been approved successfully.\"); request leaves Pending and appears in Confirmed with Reviewed by = agent.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-APR-005",
+     "title": "User KYC level is updated after approval",
+     "steps": [
+      "Approve a first-level request.",
+      "Open the user in Account list and User management."
+     ],
+     "expected": "User appears in Account list > Required only; User management shows the KYC state verified. After approving a completion request the user moves to Fully completed.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-APR-006",
+     "title": "User is notified of approval",
+     "steps": [
+      "Approve a request for a test user.",
+      "Check the app/email/SMS of the user."
+     ],
+     "expected": "User receives the approval notification and the app shows the new KYC level.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-APR-007",
+     "title": "Double-click on Confirm does not double-submit",
+     "steps": [
+      "Double-click \"Confirm\" quickly."
+     ],
+     "expected": "Only one approval is recorded; button is disabled/loading during the request.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-APR-008",
+     "title": "Cancel from Review details",
+     "steps": [
+      "Click Cancel on Review details."
+     ],
+     "expected": "No decision is saved; request remains Pending.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-APR-009",
+     "title": "Confirm is not possible with an unanswered question",
+     "steps": [
+      "Try to reach Review details by skipping a question (URL or Next)."
+     ],
+     "expected": "Not possible: Next/Continue stay disabled until all questions are answered.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "11",
+   "name": "Rejection flow — generic behaviour",
+   "figma": "2794:14968, 2819:23953, 2828:24196, 2812:21686 (Document originality example)",
+   "pre": "Agent is on any review question.",
+   "cases": [
+    {
+     "id": "KYC-REJ-001",
+     "title": "\"No\" opens the \"What's the problem?\" reason picker",
+     "steps": [
+      "Click \"No, it's not ✕\" on question 1/9."
+     ],
+     "expected": "Card switches to \"What's the problem?\" with a back arrow, a hint (\"Select details that are unreadable.\" / \"Pick one problem\") and radio options for that question.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-REJ-002",
+     "title": "Back arrow returns to the question",
+     "steps": [
+      "Open the picker, click the back arrow."
+     ],
+     "expected": "The original question is shown again with no answer recorded.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REJ-003",
+     "title": "Choosing a reason fails the request and jumps to Review details",
+     "steps": [
+      "Pick a reason."
+     ],
+     "expected": "Review details shows only the failing item (e.g. \"Document type: Photocopy ✕\"), red thumbnails, and a red callout \"Verification request failed!\" with a reason-specific message; footer Back and red \"Reject request\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REJ-004",
+     "title": "Reject request",
+     "steps": [
+      "Click \"Reject request\"."
+     ],
+     "expected": "Agent returns to Requests; green toast \"Verification request has been rejected successfully.\"; request moves to Rejected with Reviewed by = agent.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-REJ-005",
+     "title": "Back from failed Review details lets the agent change the answer",
+     "steps": [
+      "On the failed Review details click Back.",
+      "Answer Yes instead."
+     ],
+     "expected": "Agent returns to the question; changing the answer continues the normal flow and the failure is cleared.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REJ-006",
+     "title": "User is notified with the rejection reason",
+     "steps": [
+      "Reject a test user request.",
+      "Check the user side."
+     ],
+     "expected": "User is notified with the reason message and can resubmit; next submission arrives as \"Resubmission\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-REJ-007",
+     "title": "Rejection reason is stored and visible later",
+     "steps": [
+      "Open the rejected request preview."
+     ],
+     "expected": "Rejected preview and the next resubmission history show the chosen reason(s).",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-REJ-008",
+     "title": "Single reason only (radio)",
+     "steps": [
+      "In a picker, select one reason then another."
+     ],
+     "expected": "Only one option is selected at a time where the hint says \"Pick one problem\"; multi-select only where the hint says \"Select details\".",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "12",
+   "name": "Rejection reasons (17, one per Figma \"Rejection\" frame)",
+   "figma": "7. Rejection - … frames and their \"About - Rejection\" notes",
+   "pre": "Agent is reviewing a Pending request and reaches the question for the reason under test.",
+   "cases": [
+    {
+     "id": "KYC-RSN-001",
+     "title": "Reject for \"Document originality\"",
+     "steps": [
+      "Answer \"No\" on 1/9 original.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options: Document is a photocopy; Images appear from different documents; Front side missing; Back side missing. Failure text e.g. \"ID document is a photocopy; user will need to submit the original to move forward.\" Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Document originality\"; rejection succeeds and the stored reason is \"Document originality\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-RSN-002",
+     "title": "Reject for \"First name\"",
+     "steps": [
+      "Answer \"No\" on 3/9 first name.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options: Information doesn't match the document (possible fraud); Unreadable name. Review details \"First name: No match (possible fraud) ✕\", message \"The first name the user typed doesn't match the one on their ID.\" Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"First name\"; rejection succeeds and the stored reason is \"First name\".",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-RSN-003",
+     "title": "Reject for \"Last name\"",
+     "steps": [
+      "Answer \"No\" on 4/9 last name.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Same options as first name; message refers to the last name. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Last name\"; rejection succeeds and the stored reason is \"Last name\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-004",
+     "title": "Reject for \"Date of birth\"",
+     "steps": [
+      "Answer \"No\" on 5/9 DOB.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options: mismatch (possible fraud) / unreadable; message refers to the date of birth. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Date of birth\"; rejection succeeds and the stored reason is \"Date of birth\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-005",
+     "title": "Reject for \"Gender\"",
+     "steps": [
+      "Answer \"No\" on 6/9 gender.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options: mismatch / unreadable; message refers to the gender. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Gender\"; rejection succeeds and the stored reason is \"Gender\".",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-006",
+     "title": "Reject for \"Citizenship\"",
+     "steps": [
+      "Answer \"No\" on 7/9 citizenship.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options: mismatch / unreadable; message refers to citizenship. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Citizenship\"; rejection succeeds and the stored reason is \"Citizenship\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-007",
+     "title": "Reject for \"ID Reference\"",
+     "steps": [
+      "Answer \"No\" on 8/9 \"It's not readable\".",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Clicking \"It's not readable\" fails the request with an ID-reference reason. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"ID Reference\"; rejection succeeds and the stored reason is \"ID Reference\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-008",
+     "title": "Reject for \"ID expiration date\"",
+     "steps": [
+      "Answer \"No\" on 9/9 \"It's not readable\" or expired.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Unreadable or expired dates fail the request with an expiration reason. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"ID expiration date\"; rejection succeeds and the stored reason is \"ID expiration date\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-009",
+     "title": "Reject for \"Selfie originality\"",
+     "steps": [
+      "Answer \"No\" on Selfie 1/3.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options cover photocopy/screenshot/half photo; message asks for an original selfie. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Selfie originality\"; rejection succeeds and the stored reason is \"Selfie originality\".",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-010",
+     "title": "Reject for \"Selfie compliance\"",
+     "steps": [
+      "Answer \"No\" on Selfie 2/3.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Options cover subject position, environment, visibility. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Selfie compliance\"; rejection succeeds and the stored reason is \"Selfie compliance\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-011",
+     "title": "Reject for \"Selfie match\"",
+     "steps": [
+      "Answer \"No\" on Selfie 3/3.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Face non-match fails the request (critical fraud indicator, may trigger a security flag). Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Selfie match\"; rejection succeeds and the stored reason is \"Selfie match\".",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-012",
+     "title": "Reject for \"Localization plan\"",
+     "steps": [
+      "Answer \"No\" on Additional 1/6.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Invalid localization plan fails the completion request. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Localization plan\"; rejection succeeds and the stored reason is \"Localization plan\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-013",
+     "title": "Reject for \"House on map\"",
+     "steps": [
+      "Answer \"No\" on Additional 2/6.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "House not clearly marked fails the completion request. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"House on map\"; rejection succeeds and the stored reason is \"House on map\".",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-014",
+     "title": "Reject for \"Document originality (additional)\"",
+     "steps": [
+      "Answer \"No\" on Additional 3/6 IUN original.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Non-original IUN document fails the completion request. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Document originality (additional)\"; rejection succeeds and the stored reason is \"Document originality (additional)\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-015",
+     "title": "Reject for \"IUN number\"",
+     "steps": [
+      "Answer \"No\" on Additional 4/6.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Invalid IUN number fails the completion request. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"IUN number\"; rejection succeeds and the stored reason is \"IUN number\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-016",
+     "title": "Reject for \"Full name (additional)\"",
+     "steps": [
+      "Answer \"No\" on Additional 5/6.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "Name mismatch on the IUN document fails the completion request. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Full name (additional)\"; rejection succeeds and the stored reason is \"Full name (additional)\".",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    },
+    {
+     "id": "KYC-RSN-017",
+     "title": "Reject for \"Date of birth (additional)\"",
+     "steps": [
+      "Answer \"No\" on Additional 6/6.",
+      "Pick each available reason (one per run).",
+      "Check Review details, then Reject request."
+     ],
+     "expected": "DOB mismatch on the IUN document fails the completion request. Review details lists the item with ✕ and a \"Verification request failed!\" message specific to \"Date of birth (additional)\"; rejection succeeds and the stored reason is \"Date of birth (additional)\".",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Options other than the two designed examples are inferred from the \"About - Rejection\" notes; confirm wording against the build."
+    }
+   ]
+  },
+  {
+   "id": "13",
+   "name": "Account list (verified accounts)",
+   "figma": "2996:136116 (Required only), 2996:161614 (Fully completed)",
+   "pre": "Agent is on Kyc & Comp. > Account list.",
+   "cases": [
+    {
+     "id": "KYC-ACC-001",
+     "title": "Tabs Required only and Fully completed",
+     "steps": [
+      "Observe the tabs."
+     ],
+     "expected": "Two tabs: \"Required only\" (selected by default) and \"Fully completed\"; exactly one selected.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-ACC-002",
+     "title": "Table columns",
+     "steps": [
+      "Observe the header."
+     ],
+     "expected": "Checkbox, Username, Country, Requested by, Reviewed by, Reviewed date, and \"See details\" on each row.",
+     "priority": "High",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-ACC-003",
+     "title": "Required only lists users with required KYC only",
+     "steps": [
+      "Open See details on sampled rows."
+     ],
+     "expected": "Each sampled user's KYC level is \"Required only\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ACC-004",
+     "title": "Fully completed lists users with full KYC",
+     "steps": [
+      "Switch to Fully completed and sample rows."
+     ],
+     "expected": "Each sampled user's KYC level is \"Fully completed\".",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ACC-005",
+     "title": "See details opens the account",
+     "steps": [
+      "Click \"See details\"."
+     ],
+     "expected": "The user's account / KYC details open (User management account details or a KYC detail view) for the same username.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ACC-006",
+     "title": "Search, filters, refresh, export and pagination",
+     "steps": [
+      "Repeat KYC-REQ-030…044 checks on Account list."
+     ],
+     "expected": "Same toolbar and footer behaviour as Requests (\"Search account...\", Filters, Export, Per page 8, \"Showing 1 to 8 of N results\").",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ACC-007",
+     "title": "Approved user appears in Account list",
+     "steps": [
+      "Approve a request.",
+      "Search the user in Account list."
+     ],
+     "expected": "The user appears in the right tab with Reviewed by = agent and Reviewed date = approval time.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false,
+     "note": "State-changing: runs only with PHX_ALLOW_KYC_OPS=true and a disposable pending KYC request."
+    },
+    {
+     "id": "KYC-ACC-008",
+     "title": "Rejected or pending users are not in Account list",
+     "steps": [
+      "Search a user whose only request is pending or rejected."
+     ],
+     "expected": "The user is not listed.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-ACC-009",
+     "title": "Heading copy",
+     "steps": [
+      "Read the heading."
+     ],
+     "expected": "Figma reads \"All verified account\" (singular). Report the build text; suggested copy \"All verified accounts\".",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    }
+   ]
+  },
+  {
+   "id": "14",
+   "name": "Manual verification (agent-submitted KYC)",
+   "figma": "2996:134861 … 3065:174462 (7. Manual Submission)",
+   "pre": "Agent clicked \"Manual verification\" on Account list.",
+   "cases": [
+    {
+     "id": "KYC-MAN-001",
+     "title": "Wizard layout and stepper",
+     "steps": [
+      "Observe the page."
+     ],
+     "expected": "Breadcrumb \"<icon> / Account list / Manual verification\", help link and X; stepper Check user, Personal information, ID document, Selfie, Localization plan, IUN, Review details; title \"Check user\"; footer Cancel and disabled Continue.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": true
+    },
+    {
+     "id": "KYC-MAN-002",
+     "title": "Username autocomplete",
+     "steps": [
+      "Type \"ma\" in the Username field."
+     ],
+     "expected": "Field with @ prefix and placeholder \"ex: marshall\"; a dropdown lists matching users with initials avatars (e.g. @alanamar, @maximusking…); clear (x) button empties the field.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-003",
+     "title": "Selecting a user shows a summary",
+     "steps": [
+      "Pick a user."
+     ],
+     "expected": "Summary card shows First name, Last name, Country of residence and Current KYC status badge; Continue becomes enabled.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-004",
+     "title": "Unknown username",
+     "steps": [
+      "Type a username that does not exist."
+     ],
+     "expected": "\"No user found\" (or empty dropdown); Continue stays disabled.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-005",
+     "title": "Already verified or pending user",
+     "steps": [
+      "Pick a user who is Fully completed, or who has a pending request."
+     ],
+     "expected": "The flow warns/blocks (no duplicate request); report the behaviour.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-006",
+     "title": "Personal information is pre-filled and editable",
+     "steps": [
+      "Continue to Personal information."
+     ],
+     "expected": "First legal name and Last legal name pre-filled from the account (help icons), Gender dropdown \"Choose a gender...\"; orange callout \"Just double-check the info before you confirm it!\" explaining the values come from what the user typed. Continue disabled until gender is chosen.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-007",
+     "title": "Personal information — date of birth",
+     "steps": [
+      "Continue to the DOB sub-step.",
+      "Pick a date."
+     ],
+     "expected": "Date picker \"Select date...\"; Continue enabled after a date is picked; future dates and under-age dates are rejected.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-008",
+     "title": "Personal information — countries",
+     "steps": [
+      "Continue to the country sub-step."
+     ],
+     "expected": "Country of residence read-only (pre-filled); Country of citizenship dropdown \"Choose a country...\"; Continue enabled after selection.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-009",
+     "title": "Name fields validation",
+     "steps": [
+      "Clear first/last legal name.",
+      "Enter digits/special characters."
+     ],
+     "expected": "Empty names block Continue; invalid characters show a validation message.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-010",
+     "title": "ID document type selection",
+     "steps": [
+      "Continue to ID document."
+     ],
+     "expected": "\"Please select at least one document to continue\" with options \"National identity card\" and \"National identity recipe\" (typo for \"receipt\"); Continue disabled until one is selected.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-011",
+     "title": "Upload ID front and back",
+     "steps": [
+      "Upload a .jpeg front and a .png back under 25 MB."
+     ],
+     "expected": "Two drop zones \"Upload the front side\" / \"Upload the back side\" (Format: .jpeg, .png & Max file size: 25 MB, Browse files); previews appear with replace and delete icons; Continue enabled only when both sides are uploaded.",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-012",
+     "title": "Upload validation: format and size",
+     "steps": [
+      "Upload a .gif/.pdf as ID.",
+      "Upload a 26 MB image."
+     ],
+     "expected": "Both are rejected with a clear message; nothing is uploaded.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-013",
+     "title": "Replace and delete an uploaded file",
+     "steps": [
+      "Click replace on a preview, then delete."
+     ],
+     "expected": "Replace opens the file picker and swaps the image; delete clears it and disables Continue.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-014",
+     "title": "Upload selfie",
+     "steps": [
+      "Continue to Selfie, upload a .jpeg."
+     ],
+     "expected": "\"Upload selfie\" zone (jpeg/png ≤ 25 MB); preview with replace/delete; Continue enabled after upload.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-015",
+     "title": "Upload localization plan",
+     "steps": [
+      "Continue to Localization plan, upload a PDF."
+     ],
+     "expected": "\"Upload localization plan\" zone accepts .pdf and .jpeg ≤ 25 MB; Continue enabled after upload.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-016",
+     "title": "Upload IUN document",
+     "steps": [
+      "Continue to IUN, upload an image."
+     ],
+     "expected": "\"Upload IUN document\" zone (jpeg/png ≤ 25 MB); preview; Continue enabled after upload.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-017",
+     "title": "Review details and submit",
+     "steps": [
+      "Continue to Review details, check values, submit."
+     ],
+     "expected": "Summary of every entered value and uploaded document; submitting creates a request (Requested by = agent) or verifies the user directly — report which; success message shown.",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-018",
+     "title": "Back navigation keeps entered data",
+     "steps": [
+      "Go Back from any step."
+     ],
+     "expected": "Previously entered values and uploads are kept.",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    },
+    {
+     "id": "KYC-MAN-019",
+     "title": "Cancel discards the manual verification",
+     "steps": [
+      "Click Cancel mid-way."
+     ],
+     "expected": "Agent returns to Account list; nothing is created.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-MAN-020",
+     "title": "Optional steps (Localization plan, IUN)",
+     "steps": [
+      "Try to skip Localization plan and IUN."
+     ],
+     "expected": "Report whether they are mandatory; if optional, a Skip action exists and the user ends at \"Required only\".",
+     "priority": "Medium",
+     "automate": false,
+     "smoke": false,
+     "note": "Uploads and submit are state-changing: PHX_ALLOW_KYC_OPS=true and a disposable unverified user."
+    }
+   ]
+  },
+  {
+   "id": "15",
+   "name": "Cross-cutting, security and non-functional",
+   "figma": "all KYC frames",
+   "pre": "Agent is logged in with KYC permissions.",
+   "cases": [
+    {
+     "id": "KYC-XC-001",
+     "title": "No server error on any KYC page",
+     "steps": [
+      "Open Requests (3 tabs), a preview, a review, Account list (2 tabs), Manual verification."
+     ],
+     "expected": "None shows \"Oops! An unexpected error occurred.\" or a blank page; console has no uncaught errors.",
+     "priority": "Critical",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-002",
+     "title": "Page load time",
+     "steps": [
+      "Measure time to first table row on Requests and Account list."
+     ],
+     "expected": "Lists render within 3 s on testbox; a loading state is shown meanwhile.",
+     "priority": "Medium",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-003",
+     "title": "Document images are not publicly accessible",
+     "steps": [
+      "Copy a document image URL, open it in a private window."
+     ],
+     "expected": "Access is denied without an authenticated session (signed or expiring URL).",
+     "priority": "Critical",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-004",
+     "title": "Personal data masked where not needed",
+     "steps": [
+      "Check list pages for sensitive data."
+     ],
+     "expected": "List pages show no ID numbers or document images; sensitive data only in preview/review.",
+     "priority": "High",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-005",
+     "title": "Audit trail of decisions",
+     "steps": [
+      "Approve/reject a request, check audit logs."
+     ],
+     "expected": "Each decision records agent, time, request, answers and reason.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-006",
+     "title": "Copy and typos",
+     "steps": [
+      "Read all KYC screens."
+     ],
+     "expected": "Report: \"Personal informations\", \"Date of of birth\", \"National identity recipe\", \"All verified account\", Localization plan screen titled \"Upload ID document\" with front/back sides.",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-007",
+     "title": "Status badge colours are consistent",
+     "steps": [
+      "Compare Pending, Confirmed, Rejected, Unverified, Required only badges across screens."
+     ],
+     "expected": "Same label and colour for the same status everywhere (Pending orange, Confirmed green, Rejected red).",
+     "priority": "Low",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-008",
+     "title": "Keyboard navigation in the review",
+     "steps": [
+      "Use Tab/Enter/Space through a review question."
+     ],
+     "expected": "All buttons, radios and inputs are reachable and operable by keyboard with visible focus.",
+     "priority": "Usability",
+     "automate": false,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-009",
+     "title": "Responsive layout at 1280 px",
+     "steps": [
+      "Resize to 1280×800."
+     ],
+     "expected": "No overlapping elements; table scrolls horizontally if needed; review page usable.",
+     "priority": "Usability",
+     "automate": true,
+     "smoke": false
+    },
+    {
+     "id": "KYC-XC-010",
+     "title": "Dashboard / User management KYC states stay in sync",
+     "steps": [
+      "After approving/rejecting, open User management for the user."
+     ],
+     "expected": "User management KYC state matches the KYC decision.",
+     "priority": "High",
+     "automate": false,
+     "smoke": false
+    }
+   ]
+  }
+ ]
+}

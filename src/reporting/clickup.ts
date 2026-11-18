@@ -17,6 +17,8 @@ export const clickupTarget = {
   workspaceId: process.env.CLICKUP_WORKSPACE_ID ?? '20509715',
   docId: process.env.CLICKUP_DOC_ID ?? 'khx0k-185755',
   parentPageId: process.env.CLICKUP_REPORTS_PAGE_ID ?? 'khx0k-269135',
+  /** Phoenix > Test plans: parent of each module's plan page. */
+  plansPageId: process.env.CLICKUP_PLANS_PAGE_ID ?? 'khx0k-262115',
 };
 
 class ServerError extends Error {}
@@ -127,8 +129,8 @@ async function createChunked(token: string, name: string, markdown: string, pare
  * line in the markdown (the markers themselves are not sent), e.g. "Defects"
  * and "Test plan with feedback". Returns the report URL.
  */
-export async function publishPage(token: string, name: string, markdown: string): Promise<string> {
-  const { workspaceId, docId, parentPageId } = clickupTarget;
+export async function publishPage(token: string, name: string, markdown: string, parentPageId = clickupTarget.parentPageId): Promise<string> {
+  const { workspaceId, docId } = clickupTarget;
   const [main, ...subpages] = markdown.split(/^@@subpage /m);
   const id = await createChunked(token, name, main.trimEnd(), parentPageId);
   for (const sub of subpages) {

@@ -10,6 +10,8 @@ import { ManualOperationFlow } from '../pages/savings/ManualOperationFlow';
 import { UsersListPage } from '../pages/users/UsersListPage';
 import { UserDetailsPage } from '../pages/users/UserDetailsPage';
 import { UserFlowPage } from '../pages/users/UserFlowPage';
+import { KycRequestsPage } from '../pages/kyc/KycRequestsPage';
+import { KycReviewPage } from '../pages/kyc/KycReviewPage';
 import { restoreSessionStorage } from '../utils/session';
 
 type Options = {
@@ -29,6 +31,8 @@ type Fixtures = {
   usersList: UsersListPage;
   userDetails: UserDetailsPage;
   userFlow: UserFlowPage;
+  kycRequests: KycRequestsPage;
+  kycReview: KycReviewPage;
 };
 
 export const test = base.extend<Fixtures & Options>({
@@ -48,6 +52,8 @@ export const test = base.extend<Fixtures & Options>({
   usersList: async ({ page }, use) => use(new UsersListPage(page)),
   userDetails: async ({ page }, use) => use(new UserDetailsPage(page)),
   userFlow: async ({ page }, use) => use(new UserFlowPage(page)),
+  kycRequests: async ({ page }, use) => use(new KycRequestsPage(page)),
+  kycReview: async ({ page }, use) => use(new KycReviewPage(page)),
 });
 
 export { expect } from '@playwright/test';

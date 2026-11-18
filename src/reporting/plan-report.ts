@@ -21,7 +21,7 @@ import { publishPage } from './clickup';
  * set. PHX_PUBLISH_REPORT=false turns publishing off.
  */
 
-const TC_ID = /\b(?:TC|USR)-[A-Z0-9]+-\d{3}\b/g;
+const TC_ID = /\b(?:TC|USR|KYC)-[A-Z0-9]+-\d{3}\b/g;
 
 type ModuleOptions = {
   /** Plan file name without extension, e.g. 'user-management'. */
@@ -44,6 +44,11 @@ const MODULES: Record<string, Omit<ModuleOptions, 'module'>> = {
     feature: 'User management',
     specDir: 'tests/user-management',
     gates: () => [['Account-changing tests', process.env.PHX_ALLOW_ACCOUNT_OPS === 'true' ? 'Enabled (disposable accounts from .env)' : 'Disabled (PHX_ALLOW_ACCOUNT_OPS≠true) → Skipped']],
+  },
+  kyc: {
+    feature: 'KYC',
+    specDir: 'tests/kyc',
+    gates: () => [['KYC decision tests (approve / reject / manual submit)', process.env.PHX_ALLOW_KYC_OPS === 'true' ? 'Enabled (disposable pending requests)' : 'Disabled (PHX_ALLOW_KYC_OPS≠true) → Skipped']],
   },
 };
 const RANK: Record<Outcome, number> = { Failed: 4, Blocked: 3, Passed: 2, Skipped: 1, 'Not executed': 0 };

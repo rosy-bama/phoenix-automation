@@ -22,6 +22,7 @@ export default defineConfig({
     ['list'],
     ['./src/reporting/plan-report.ts', { module: 'fiat-wallet' }],
     ['./src/reporting/plan-report.ts', { module: 'user-management' }],
+    ['./src/reporting/plan-report.ts', { module: 'kyc' }],
   ],
 
   use: {

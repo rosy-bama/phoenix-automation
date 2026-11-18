@@ -22,6 +22,9 @@
     "test:users": "playwright test tests/user-management",
     "test:users:report": "playwright test tests/user-management",
     "snapshot:users": "node scripts/snapshot-users.js",
+    "test:kyc": "playwright test tests/kyc",
+    "test:kyc:report": "playwright test tests/kyc",
+    "snapshot:kyc": "node scripts/snapshot-kyc.js",
     "report:publish": "node --no-warnings --env-file=.env scripts/publish-report.ts"
   },
   "devDependencies": {

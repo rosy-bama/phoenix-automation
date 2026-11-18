@@ -1,8 +1,9 @@
 import fiat from './fiat-wallet.plan.json';
 import users from './user-management.plan.json';
+import kyc from './kyc.plan.json';
 
 type Case = { id: string; priority: string; smoke: boolean };
-const plans: { sections: { cases: Case[] }[] }[] = [fiat, users];
+const plans: { sections: { cases: Case[] }[] }[] = [fiat, users, kyc];
 const cases = new Map(plans.flatMap((p) => p.sections.flatMap((s) => s.cases)).map((c) => [c.id, c]));
 
 /**
