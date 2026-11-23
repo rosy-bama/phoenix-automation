@@ -25,3 +25,18 @@ Never edit `test-plan/`.
 
 ## Before the pull request
 `npm run typecheck`, `npm run test:unit`, then run the changed tests once on testbox and attach the result.
+
+## Catalog (catalog.json) and executor
+`catalog.json` is the vocabulary the tool's test cases are written in: page objects of `src/pages/` (id = fixture name
+in `src/fixtures/test-fixtures.ts`, else the class name), their public `Locator` properties (elements) and public async
+methods (actions). It is **generated** by `npm run catalog`, never edited by hand: any change to a page object must
+regenerate it in the same pull request (the `catalog.json is up to date` unit test fails otherwise). Name elements by
+what they are (`…Button`, `…Input`, `…Tab`, `heading`) so their kind is right in the tool.
+
+A method that moves money gets `@movesMoney` in its JSDoc, one that changes a customer account gets `@changesState`:
+the catalog marks it and the elements it uses, and the executor never runs them unless `PHX_ALLOW_MONEY_OPS` /
+`PHX_ALLOW_ACCOUNT_OPS` allow it.
+
+`src/executor` runs the tool's Runnable cases from their automation steps (`tests/tool/run-plan.spec.ts`, only when the
+runner gives a run plan in `EJARA_RUN_PLAN`), on the page objects the catalog names. Keep it free of app knowledge:
+a missing word belongs in a page object, not in the executor.

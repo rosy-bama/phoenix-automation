@@ -46,6 +46,7 @@ export class ManualOperationFlow {
     await this.reviewButton.click();
   }
 
+  /** Confirms the deposit with the OTP: real money moves (PHX_ALLOW_MONEY_OPS=true, testbox only). @movesMoney */
   async confirmWithOtp(otp: string) {
     await this.confirmDepositButton.click();
     await fillOtp(this.page, otp);

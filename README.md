@@ -91,3 +91,12 @@ The test plan is kept in the Ejara Automation Tool; this repo follows it.
   writes one line per test (final attempt).
 - `npm run test:unit` — unit tests (no browser). `ejara-automation.json` — what the tool reads. `CLAUDE.md` —
   conventions for AI changes.
+
+## Catalog and automation steps (Ejara Automation Tool)
+`npm run catalog` writes `catalog.json`: the page objects, their elements and actions, generated from the code. The
+tool reads it on its daily repo check, so test cases written in the tool can use them (spec §6.10). Cases written with
+automation steps run here without new code: in a run started from the tool, the runner downloads the run's plan and
+`tests/tool/run-plan.spec.ts` creates one test per Runnable case ("FW-001 Account list opens @smoke @high"), run step
+by step by `src/executor` with the page objects' own locators. Values: `{{account.ADMIN.username}}` (password and otp
+never printed), `{{data.walletUsername}}`, `{{run.env}}`. Money-moving steps run only with `PHX_ALLOW_MONEY_OPS=true`,
+account changes only with `PHX_ALLOW_ACCOUNT_OPS=true`; the whole case is skipped otherwise.

@@ -88,6 +88,14 @@ export class UserFlowPage {
     await this.reason.first().fill(text);
   }
 
+  /**
+   * On the Review step: submits the change (deactivate, freeze, delete, activate…) to the customer's account.
+   * @changesState
+   */
+  async submit() {
+    await this.primaryButton.click();
+  }
+
   /** Clicks the primary button and waits for the Review step. */
   async toReview() {
     await this.primaryButton.click();

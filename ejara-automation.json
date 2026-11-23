@@ -5,6 +5,7 @@
   "platforms": ["web"],
   "planDir": "test-plan",
   "tests": "tests",
+  "executor": "tests/tool/run-plan.spec.ts",
   "commands": {
     "tag": "npx playwright test --grep {tag}",
     "all": "npx playwright test",

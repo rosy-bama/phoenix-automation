@@ -124,8 +124,10 @@ export class FiatManualOperationPage {
     return (await this.banner.innerText()).replace(/\s+/g, ' ').trim();
   }
 
-  /** Confirm + OTP (if asked). Moves money: callers must check requireMoneyOps(). */
-  /** Returns whether an OTP was asked for. */
+  /**
+   * Confirm + OTP (if asked). Moves money: callers must check requireMoneyOps(). Returns whether an OTP was asked for.
+   * @movesMoney
+   */
   async confirm(otp: string): Promise<boolean> {
     await this.confirmButton.click();
     const otpBox = this.page.getByRole('textbox', { name: 'OTP Input 1' });
