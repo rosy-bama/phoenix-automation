@@ -39,6 +39,8 @@ export interface CatalogAction {
 export interface CatalogScreen {
   id: string;
   name: string;
+  /** Its folder under src/pages (fiat, users…), null at the root: the tool matches screens to modules with it. */
+  area: string | null;
   /** The page object's class and file, for the executor. */
   className: string;
   file: string;
@@ -171,6 +173,10 @@ export function buildCatalog(root: string): Catalog {
       screens.push({
         id: fixtures.get(className) ?? lowerFirst(className.replace(/Page$/, '')),
         name: className,
+        area: (() => {
+          const dir = path.relative(path.join(root, 'src', 'pages'), path.dirname(file));
+          return dir && dir !== '.' ? dir.split(path.sep)[0] : null;
+        })(),
         className,
         file: path.relative(root, file),
         description: doc(st),

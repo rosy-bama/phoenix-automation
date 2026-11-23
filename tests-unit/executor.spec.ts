@@ -16,6 +16,7 @@ const catalog: Catalog = {
     {
       id: 'fiatManualOp',
       name: 'FiatManualOperationPage',
+      area: 'fiat',
       className: 'FiatManualOperationPage',
       file: 'src/pages/fiat/FiatManualOperationPage.ts',
       description: null,
